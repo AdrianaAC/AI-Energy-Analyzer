@@ -83,7 +83,12 @@ Energy Analyzer AI`,
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as { message: string; rows: unknown };
+    const body = (await req.json()) as {
+      message: string;
+      rows: unknown;
+      facilityName?: string;
+    };
+    const facilityName = String(body.facilityName ?? "Main Facility");
 
     const rows = RowsSchema.parse(body.rows);
     const message = String(body.message ?? "");
@@ -135,10 +140,13 @@ Rules:
             recommendations: z.array(z.string()).min(1),
           }),
           execute: async (args) => {
-            const out = draftEmailToFacilityManager(args);
-            toolOutputs.draftEmailToFacilityManager = out;
-            return out;
-          },
+  const out = draftEmailToFacilityManager({
+    ...args,
+    facilityName: args.facilityName || facilityName,
+  });
+  toolOutputs.draftEmailToFacilityManager = out;
+  return out;
+},
         },
       },
     });
@@ -181,8 +189,14 @@ ${JSON.stringify({ ...toolOutputs, fallbackAnomalies }, null, 2)}
         2,
       )}`;
 
-    return new Response(text, {
-      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    const payload = {
+      toolsUsed: Object.keys(toolOutputs),
+      toolOutputs: { ...toolOutputs, fallbackAnomalies },
+      finalText: text,
+    };
+
+    return new Response(JSON.stringify(payload, null, 2), {
+      headers: { "Content-Type": "application/json; charset=utf-8" },
     });
   } catch (err) {
     const msg = err instanceof Error ? (err.stack ?? err.message) : String(err);

@@ -56,6 +56,47 @@ function normalizeRows(inputRows: Row[]) {
     return out;
   });
 }
+function normalizeHeaderKey(key: string) {
+  const k = key.trim().toLowerCase();
+
+  const monthKeys = ["month", "date", "period", "mes", "mês", "data"];
+  const consumptionKeys = [
+    "consumption",
+    "kwh",
+    "usage",
+    "energy",
+    "consumo",
+    "energia",
+  ];
+  const costKeys = [
+    "cost",
+    "price",
+    "amount",
+    "value",
+    "custo",
+    "preco",
+    "preço",
+    "valor",
+  ];
+
+  if (monthKeys.includes(k)) return "month";
+  if (consumptionKeys.includes(k)) return "consumption";
+  if (costKeys.includes(k)) return "cost";
+
+  return k.replace(/\s+/g, "_");
+}
+
+function normalizeRowKeys(row: Row): Row {
+  const out: Row = {};
+  for (const [key, value] of Object.entries(row)) {
+    out[normalizeHeaderKey(key)] = value;
+  }
+  return out;
+}
+
+function normalizeRowsKeys(rows: Row[]) {
+  return rows.map(normalizeRowKeys);
+}
 
 function detectDelimiter(firstLine: string) {
   const commaCount = (firstLine.match(/,/g) ?? []).length;
@@ -82,7 +123,7 @@ export default function Home() {
       );
     }
 
-    return normalizeRows(data as Row[]);
+    return normalizeRows(normalizeRowsKeys(data as Row[]));
   }
 
   function handleCsv(text: string) {
@@ -110,7 +151,7 @@ export default function Home() {
       );
     }
 
-    return normalizeRows(clean);
+    return normalizeRows(normalizeRowsKeys(clean));
   }
 
   function handleFile(file: File) {
@@ -146,23 +187,32 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen p-6">
+    <main className="min-h-screen bg-[var(--color-surface)] p-8">
       <div className="mx-auto max-w-6xl space-y-6">
-        <header className="space-y-2">
-          <h1 className="text-3xl font-semibold">Energy Report Analyzer</h1>
-          <p className="text-sm text-neutral-600">
-            Upload a JSON/CSV report, preview it, then ask an AI agent to
-            analyze anomalies and suggest actions.
-          </p>
-        </header>
+      <header className="space-y-3">
+  <div className="flex items-center gap-3">
+    <div className="h-10 w-10 rounded-xl bg-[var(--color-brand)]/10 flex items-center justify-center text-[var(--color-brand)] font-bold">
+      G2C
+    </div>
+    <div>
+      <h1 className="text-3xl font-semibold text-[var(--color-text-primary)]">
+        Energy Intelligence Dashboard
+      </h1>
+      <p className="text-sm text-[var(--color-text-secondary)]">
+        Corporate-grade insights for sustainability & operational efficiency
+      </p>
+    </div>
+  </div>
+</header>
+
 
         {/* Responsive 2-column layout */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* LEFT: Upload + Preview */}
           <div className="space-y-6">
-            <section className="rounded-xl border p-4">
-              <h2 className="text-lg font-medium">1) Upload</h2>
-              <p className="text-sm text-neutral-600">
+            <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">1) Upload</h2>
+              <p className="text-sm text-[var(--color-text-secondary)]">
                 Accepted: <span className="font-medium">.json</span>,{" "}
                 <span className="font-medium">.csv</span> (auto-detect “,” /
                 “;”).
@@ -192,7 +242,7 @@ export default function Home() {
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-black/5"
+                  className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   onClick={() => {
                     setError("");
                     setFileName("sample (in-app)");
@@ -204,7 +254,7 @@ export default function Home() {
 
                 <button
                   type="button"
-                  className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-black/5"
+                  className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   onClick={() => {
                     setError("");
                     setFileName("");
@@ -226,9 +276,9 @@ export default function Home() {
               ) : null}
             </section>
 
-            <section className="rounded-xl border p-4">
-              <h2 className="text-lg font-medium">2) Preview</h2>
-              <p className="text-sm text-neutral-600">Showing up to 10 rows.</p>
+            <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">2) Preview</h2>
+              <p className="text-sm text-[var(--color-text-secondary)]">Showing up to 10 rows.</p>
 
               <div className="mt-4 overflow-auto rounded-lg border bg-white">
                 {previewRows.length === 0 ? (
@@ -293,15 +343,20 @@ function AgentPanel({
   rowsCount: number;
   rows: Row[];
 }) {
-const [message, setMessage] = useState(
-  "Find anomalies and suggest 3 optimization ideas. Also draft an email to the facility manager."
-);
-
-  const [result, setResult] = useState<string>("");
+  const [message, setMessage] = useState(
+    "Find anomalies and suggest 3 optimization ideas. Also draft an email to the facility manager.",
+  );
+  const [facilityName, setFacilityName] = useState("Main Facility");
+  const [resultText, setResultText] = useState<string>("");
+  const [resultJson, setResultJson] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<"answer" | "tools" | "raw">(
+    "answer",
+  );
+  const email = resultJson?.toolOutputs?.draftEmailToFacilityManager ?? null;
 
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border p-4">
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-medium">3) Ask the Agent</h2>
@@ -320,8 +375,8 @@ const [message, setMessage] = useState(
           <span
             className={`rounded-full px-3 py-1 text-xs font-medium ${
               hasData
-                ? "bg-green-100 text-green-800"
-                : "bg-neutral-100 text-neutral-700"
+                ? "bg-[var(--color-brand)]/10 text-[var(--color-brand)]"
+                : "bg-gray-100 text-gray-700"
             }`}
           >
             {hasData ? "Ready" : "Waiting for data"}
@@ -329,8 +384,49 @@ const [message, setMessage] = useState(
         </div>
 
         <div className="mt-4 space-y-3">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-neutral-700">
+                Facility name
+              </label>
+              <input
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--color-brand)]/20 focus:border-[var(--color-brand)] transition"
+                value={facilityName}
+                onChange={(e) => setFacilityName(e.target.value)}
+                placeholder="e.g., Lisbon HQ"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-neutral-700">
+                Quick prompts
+              </label>
+              <select
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--color-brand)]/20 focus:border-[var(--color-brand)] transition"
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v) setMessage(v);
+                }}
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  Choose…
+                </option>
+                <option value="Find anomalies and suggest 3 optimization ideas.">
+                  Anomalies + optimizations
+                </option>
+                <option value="Find anomalies and draft an email to the facility manager.">
+                  Anomalies + email draft
+                </option>
+                <option value="Create an executive summary for leadership.">
+                  Executive summary
+                </option>
+              </select>
+            </div>
+          </div>
+
           <textarea
-            className="min-h-30 w-full resize-y rounded-lg border p-3 text-sm outline-none focus:ring-2 focus:ring-black/10"
+            className="min-h-[120px] w-full resize-y rounded-lg border border-gray-300 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-[var(--color-brand)]/20 focus:border-[var(--color-brand)] transition"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Ask something like: Detect anomalies, suggest improvements, generate a summary..."
@@ -339,28 +435,39 @@ const [message, setMessage] = useState(
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-black/5 disabled:opacity-50"
+              className="rounded-lg bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)] transition-colors disabled:opacity-50"
               disabled={!hasData || message.trim().length === 0}
               onClick={async () => {
                 try {
-                  setResult("Analyzing...");
+                  setResultText("Analyzing...");
+                  setResultJson(null);
 
                   const res = await fetch("/api/agent", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message, rows }),
+                    body: JSON.stringify({ message, rows, facilityName }),
                   });
 
                   const text = await res.text();
 
                   if (!res.ok) {
-                    setResult(`❌ API error (${res.status})\n${text}`);
+                    setResultText(`❌ API error (${res.status})\n${text}`);
                     return;
                   }
 
-                  setResult(text.trim() ? text : "⚠️ Empty response from API.");
+                  try {
+                    const parsed = JSON.parse(text);
+                    setResultJson(parsed);
+                    setResultText(parsed.finalText ?? "");
+                    setActiveTab("answer");
+                  } catch {
+                    // fallback if server responds with plain text
+                    setResultText(
+                      text.trim() ? text : "⚠️ Empty response from API.",
+                    );
+                  }
                 } catch (err) {
-                  setResult(`❌ Request failed\n${String(err)}`);
+                  setResultText(`❌ Request failed\n${String(err)}`);
                 }
               }}
             >
@@ -369,8 +476,11 @@ const [message, setMessage] = useState(
 
             <button
               type="button"
-              className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-black/5"
-              onClick={() => setResult("")}
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              onClick={() => {
+                setResultText("");
+                setResultJson(null);
+              }}
             >
               Clear result
             </button>
@@ -383,19 +493,115 @@ const [message, setMessage] = useState(
         </div>
       </section>
 
-      <section className="rounded-xl border p-4">
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-medium">4) Results</h2>
         <p className="text-sm text-neutral-600">
           Agent output will appear here.
         </p>
 
-        <div className="mt-4 min-h-45 whitespace-pre-wrap rounded-lg border bg-white p-4 text-sm">
-          {result ? (
-            result
-          ) : (
-            <span className="text-neutral-500">No results yet.</span>
-          )}
-        </div>
+        {resultJson ? (
+          <div className="mt-4 space-y-3">
+            <div className="flex flex-wrap gap-2">
+              <button
+                className={`rounded-md border px-3 py-1.5 text-sm font-medium ${
+                  activeTab === "answer" ? "bg-black/5" : "hover:bg-black/5"
+                }`}
+                onClick={() => setActiveTab("answer")}
+              >
+                Agent answer
+              </button>
+              <button
+                className={`rounded-md border px-3 py-1.5 text-sm font-medium ${
+                  activeTab === "tools" ? "bg-black/5" : "hover:bg-black/5"
+                }`}
+                onClick={() => setActiveTab("tools")}
+              >
+                Tools used
+              </button>
+              <button
+                className={`rounded-md border px-3 py-1.5 text-sm font-medium ${
+                  activeTab === "raw" ? "bg-black/5" : "hover:bg-black/5"
+                }`}
+                onClick={() => setActiveTab("raw")}
+              >
+                Raw JSON
+              </button>
+            </div>
+
+            {activeTab === "answer" ? (
+              <div className="min-h-[180px] whitespace-pre-wrap rounded-lg border bg-white p-4 text-sm">
+                {resultJson.finalText}
+              </div>
+            ) : null}
+            {activeTab === "tools" ? (
+              <div className="rounded-lg border bg-white p-4 text-sm space-y-5">
+                {/* Tools used */}
+                <div>
+                  <div className="text-xs text-neutral-500">Tools used</div>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {(resultJson.toolsUsed ?? []).map((t: string) => (
+                      <span
+                        key={t}
+                        className="rounded-full bg-black/5 px-3 py-1 text-xs font-medium"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tool outputs raw JSON */}
+                <div>
+                  <div className="text-xs text-neutral-500">
+                    Tool outputs (raw)
+                  </div>
+                  <pre className="mt-2 overflow-auto rounded-md bg-black/5 p-3 text-xs">
+                    {JSON.stringify(resultJson.toolOutputs, null, 2)}
+                  </pre>
+                </div>
+
+                {/* Email preview card */}
+                {email ? (
+                  <div className="rounded-lg border p-4 bg-white shadow-sm">
+                    <div className="text-xs text-neutral-500">
+                      Email preview
+                    </div>
+
+                    <div className="mt-3 text-sm space-y-3">
+                      <div>
+                        <div className="font-medium">Subject</div>
+                        <div className="mt-1 rounded-md bg-black/5 p-2 text-sm">
+                          {email.subject}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="font-medium">Body</div>
+                        <pre className="mt-1 whitespace-pre-wrap rounded-md bg-black/5 p-3 text-xs">
+                          {email.body}
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            {activeTab === "raw" ? (
+              <pre className="overflow-auto rounded-lg border bg-white p-4 text-xs">
+                {JSON.stringify(resultJson, null, 2)}
+              </pre>
+            ) : null}
+          </div>
+        ) : (
+          <div className="mt-4 min-h-[180px] whitespace-pre-wrap rounded-lg border bg-white p-4 text-sm">
+            {resultText ? (
+              resultText
+            ) : (
+              <span className="text-neutral-500">No results yet.</span>
+            )}
+          </div>
+        )}
       </section>
     </div>
   );
