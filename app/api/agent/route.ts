@@ -6,7 +6,11 @@ export const runtime = "nodejs";
 
 const openaiProvider = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-  baseURL: process.env.OPENAI_BASE_URL, // https://openrouter.ai/api/v1
+  baseURL: process.env.OPENAI_BASE_URL,
+  headers: {
+    "HTTP-Referer": "http://localhost:3000",
+    "X-Title": "Energy Analyzer MVP",
+  },
 });
 
 const modelId = process.env.OPENAI_MODEL ?? "openai/gpt-4o-mini";
@@ -16,7 +20,7 @@ const RowsSchema = z.array(
     month: z.string(),
     consumption: z.number(),
     cost: z.number().optional(),
-  })
+  }),
 );
 
 type Row = z.infer<typeof RowsSchema>[number];
@@ -38,35 +42,51 @@ function detectAnomalies(rows: Row[]) {
 }
 
 export async function POST(req: Request) {
-  const body = (await req.json()) as { message: string; rows: unknown };
+  try {
+    const body = (await req.json()) as { message: string; rows: unknown };
 
-  // Validate input coming from the frontend
-  const rows = RowsSchema.parse(body.rows);
-  const message = String(body.message ?? "");
+    const rows = RowsSchema.parse(body.rows);
+    const message = String(body.message ?? "");
 
-  const result = await generateText({
-    model: openaiProvider(modelId),
-    system:
-      "You are an energy analysis agent. Use the detectAnomalies tool when anomaly detection is relevant. Then provide concise bullet points and actionable suggestions.",
-    messages: [
-      {
-        role: "user",
-        content: `User request:\n${message}\n\nDataset:\n${JSON.stringify(rows)}`,
-      },
-    ],
-    tools: {
-      detectAnomalies: {
-        description:
-          "Detects energy consumption anomalies using a threshold based on average consumption.",
-        inputSchema: z.object({
-          rows: RowsSchema,
-        }),
-        execute: async ({ rows }: { rows: Row[] }) => detectAnomalies(rows),
-      },
-    },
-  });
+    // Step 1: deterministic tool execution (your business logic)
+    const toolResult = detectAnomalies(rows);
 
-  return new Response(result.text, {
-    headers: { "Content-Type": "text/plain; charset=utf-8" },
-  });
+    // Step 2: ask the model to produce a human-friendly answer based on toolResult
+    const result = await generateText({
+      model: openaiProvider(modelId),
+      system: `
+You are an energy analyst.
+Write a clear, concise answer in plain text.
+Use bullet points.
+Include:
+1) What was detected
+2) Why it matters
+3) 3 actionable recommendations
+4) A short "next step" checklist
+`,
+      prompt: `
+User request:
+${message}
+
+Tool result (anomaly detection):
+${JSON.stringify(toolResult, null, 2)}
+`,
+    });
+
+    const text =
+      result.text?.trim() ||
+      `⚠️ Model returned empty text.\n\nTool result:\n${JSON.stringify(
+        toolResult,
+        null,
+        2
+      )}`;
+
+    return new Response(text, {
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.stack ?? err.message : String(err);
+    return new Response(`❌ API crashed:\n${msg}`, { status: 500 });
+  }
 }
+
