@@ -293,9 +293,10 @@ function AgentPanel({
   rowsCount: number;
   rows: Row[];
 }) {
-  const [message, setMessage] = useState(
-    "Find anomalies and suggest 3 optimization ideas. Summarize in bullet points.",
-  );
+const [message, setMessage] = useState(
+  "Find anomalies and suggest 3 optimization ideas. Also draft an email to the facility manager."
+);
+
   const [result, setResult] = useState<string>("");
 
   return (

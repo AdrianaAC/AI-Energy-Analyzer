@@ -41,6 +41,46 @@ function detectAnomalies(rows: Row[]) {
   };
 }
 
+function draftEmailToFacilityManager(params: {
+  facilityName: string;
+  month: string;
+  anomalyConsumption: number;
+  threshold: number;
+  cost?: number;
+  recommendations: string[];
+}) {
+  const {
+    facilityName,
+    month,
+    anomalyConsumption,
+    threshold,
+    cost,
+    recommendations,
+  } = params;
+
+  const recs = recommendations.map((r) => `- ${r}`).join("\n");
+
+  return {
+    subject: `Energy consumption alert — ${facilityName} — ${month}`,
+    body: `Hi team,
+
+We detected an unusual energy consumption spike for ${facilityName} in ${month}.
+
+Details:
+- Consumption: ${anomalyConsumption} units (threshold: ${threshold.toFixed(2)} units)${
+      typeof cost === "number" ? `\n- Cost: ${cost}` : ""
+    }
+
+Recommended next steps:
+${recs}
+
+If you'd like, I can help set up monitoring alerts and a monthly anomaly report.
+
+Best regards,
+Energy Analyzer AI`,
+  };
+}
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as { message: string; rows: unknown };
@@ -48,45 +88,104 @@ export async function POST(req: Request) {
     const rows = RowsSchema.parse(body.rows);
     const message = String(body.message ?? "");
 
-    // Step 1: deterministic tool execution (your business logic)
-    const toolResult = detectAnomalies(rows);
+    // We will store tool outputs here so we can always produce a final answer
+    const toolOutputs: Record<string, unknown> = {};
 
-    // Step 2: ask the model to produce a human-friendly answer based on toolResult
-    const result = await generateText({
+    // 1) "Planner" step: ask model what to do (it can call tools)
+    // Note: Some OpenRouter/tool-call flows may not output final text, so we only use this step
+    // to collect tool outputs, not as the final response.
+    await generateText({
+      model: openaiProvider(modelId),
+      system: `
+You are an agent that can analyze energy datasets and take actions using tools.
+
+Rules:
+- If the user asks for anomalies/spikes, call detectAnomalies.
+- If the user asks to notify someone / email / message / report to a facility manager, call draftEmailToFacilityManager.
+- You may call tools in any order.
+- It's OK if you do NOT produce a final natural language answer in this step. Your goal is to use tools when needed.
+`,
+      messages: [
+        {
+          role: "user",
+          content: `User request:\n${message}\n\nDataset:\n${JSON.stringify(rows)}`,
+        },
+      ],
+      tools: {
+        detectAnomalies: {
+          description:
+            "Detects energy consumption anomalies using a threshold based on average consumption.",
+          inputSchema: z.object({ rows: RowsSchema }),
+          execute: async ({ rows }: { rows: Row[] }) => {
+            const out = detectAnomalies(rows);
+            toolOutputs.detectAnomalies = out;
+            return out;
+          },
+        },
+
+        draftEmailToFacilityManager: {
+          description:
+            "Drafts an email to the facility manager about detected anomalies and recommended actions.",
+          inputSchema: z.object({
+            facilityName: z.string().default("Main Facility"),
+            month: z.string(),
+            anomalyConsumption: z.number(),
+            threshold: z.number(),
+            cost: z.number().optional(),
+            recommendations: z.array(z.string()).min(1),
+          }),
+          execute: async (args) => {
+            const out = draftEmailToFacilityManager(args);
+            toolOutputs.draftEmailToFacilityManager = out;
+            return out;
+          },
+        },
+      },
+    });
+
+    // 2) Guarantee a final response: "Writer" step
+    // If the agent never called detectAnomalies, we still provide a sensible response.
+    const fallbackAnomalies =
+      toolOutputs.detectAnomalies ?? detectAnomalies(rows);
+
+    const final = await generateText({
       model: openaiProvider(modelId),
       system: `
 You are an energy analyst.
-Write a clear, concise answer in plain text.
-Use bullet points.
-Include:
-1) What was detected
-2) Why it matters
-3) 3 actionable recommendations
-4) A short "next step" checklist
+Write a clear final answer in plain text with bullet points.
+
+You will receive:
+- the user request
+- tool outputs (if any)
+
+Output format:
+1) Summary
+2) Findings
+3) 3 Recommendations
+4) If an email draft exists, include it under "Draft email" with Subject + Body.
 `,
       prompt: `
 User request:
 ${message}
 
-Tool result (anomaly detection):
-${JSON.stringify(toolResult, null, 2)}
+Tool outputs:
+${JSON.stringify({ ...toolOutputs, fallbackAnomalies }, null, 2)}
 `,
     });
 
     const text =
-      result.text?.trim() ||
-      `⚠️ Model returned empty text.\n\nTool result:\n${JSON.stringify(
-        toolResult,
+      final.text?.trim() ||
+      `⚠️ Model returned empty text.\n\nTool outputs:\n${JSON.stringify(
+        { ...toolOutputs, fallbackAnomalies },
         null,
-        2
+        2,
       )}`;
 
     return new Response(text, {
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
   } catch (err) {
-    const msg = err instanceof Error ? err.stack ?? err.message : String(err);
+    const msg = err instanceof Error ? (err.stack ?? err.message) : String(err);
     return new Response(`❌ API crashed:\n${msg}`, { status: 500 });
   }
 }
-
