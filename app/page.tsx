@@ -169,10 +169,19 @@ export default function Home() {
               </p>
 
               <div className="mt-3">
+                <label
+                  htmlFor="file-upload"
+                  className="block text-sm font-medium text-neutral-700"
+                >
+                  Upload file
+                </label>
                 <input
+                  id="file-upload"
                   type="file"
                   accept=".json,application/json,.csv,text/csv"
                   className="block w-full text-sm"
+                  placeholder="Select a JSON or CSV file"
+                  title="Select a JSON or CSV file"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) handleFile(file);
@@ -264,7 +273,11 @@ export default function Home() {
           </div>
 
           {/* RIGHT: Agent Panel */}
-          <AgentPanel hasData={rows.length > 0} rowsCount={rows.length} />
+          <AgentPanel
+            hasData={rows.length > 0}
+            rowsCount={rows.length}
+            rows={rows}
+          />
         </div>
       </div>
     </main>
@@ -274,9 +287,11 @@ export default function Home() {
 function AgentPanel({
   hasData,
   rowsCount,
+  rows,
 }: {
   hasData: boolean;
   rowsCount: number;
+  rows: Row[];
 }) {
   const [message, setMessage] = useState(
     "Find anomalies and suggest 3 optimization ideas. Summarize in bullet points.",
@@ -314,7 +329,7 @@ function AgentPanel({
 
         <div className="mt-4 space-y-3">
           <textarea
-            className="min-h-[120px] w-full resize-y rounded-lg border p-3 text-sm outline-none focus:ring-2 focus:ring-black/10"
+            className="min-h-30 w-full resize-y rounded-lg border p-3 text-sm outline-none focus:ring-2 focus:ring-black/10"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Ask something like: Detect anomalies, suggest improvements, generate a summary..."
@@ -325,11 +340,27 @@ function AgentPanel({
               type="button"
               className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-black/5 disabled:opacity-50"
               disabled={!hasData || message.trim().length === 0}
-              onClick={() => {
-                // Stub: Day 2 will call our API route (agent + tool)
-                setResult(
-                  "✅ (Stub)\n- Anomaly detected in 2025-03 (consumption spike)\n- Suggestion: shift usage to off-peak hours\n- Suggestion: investigate HVAC efficiency\n- Suggestion: set monthly budget alerts",
-                );
+              onClick={async () => {
+                try {
+                  setResult("Analyzing...");
+
+                  const res = await fetch("/api/agent", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message, rows }),
+                  });
+
+                  const text = await res.text();
+
+                  if (!res.ok) {
+                    setResult(`❌ API error (${res.status})\n${text}`);
+                    return;
+                  }
+
+                  setResult(text.trim() ? text : "⚠️ Empty response from API.");
+                } catch (err) {
+                  setResult(`❌ Request failed\n${String(err)}`);
+                }
               }}
             >
               Analyze
@@ -357,7 +388,7 @@ function AgentPanel({
           Agent output will appear here.
         </p>
 
-        <div className="mt-4 min-h-[180px] whitespace-pre-wrap rounded-lg border bg-white p-4 text-sm">
+        <div className="mt-4 min-h-45 whitespace-pre-wrap rounded-lg border bg-white p-4 text-sm">
           {result ? (
             result
           ) : (
