@@ -189,29 +189,31 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[var(--color-surface)] p-8">
       <div className="mx-auto max-w-6xl space-y-6">
-      <header className="space-y-3">
-  <div className="flex items-center gap-3">
-    <div className="h-10 w-10 rounded-xl bg-[var(--color-brand)]/10 flex items-center justify-center text-[var(--color-brand)] font-bold">
-      G2C
-    </div>
-    <div>
-      <h1 className="text-3xl font-semibold text-[var(--color-text-primary)]">
-        Energy Intelligence Dashboard
-      </h1>
-      <p className="text-sm text-[var(--color-text-secondary)]">
-        Corporate-grade insights for sustainability & operational efficiency
-      </p>
-    </div>
-  </div>
-</header>
-
+        <header className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-[var(--color-brand)]/10 flex items-center justify-center text-[var(--color-brand)] font-bold">
+              G2C
+            </div>
+            <div>
+              <h1 className="text-3xl font-semibold text-[var(--color-text-primary)]">
+                Energy Intelligence Dashboard
+              </h1>
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                Corporate-grade insights for sustainability & operational
+                efficiency
+              </p>
+            </div>
+          </div>
+        </header>
 
         {/* Responsive 2-column layout */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* LEFT: Upload + Preview */}
           <div className="space-y-6">
             <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">1) Upload</h2>
+              <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                1) Upload
+              </h2>
               <p className="text-sm text-[var(--color-text-secondary)]">
                 Accepted: <span className="font-medium">.json</span>,{" "}
                 <span className="font-medium">.csv</span> (auto-detect “,” /
@@ -277,8 +279,12 @@ export default function Home() {
             </section>
 
             <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">2) Preview</h2>
-              <p className="text-sm text-[var(--color-text-secondary)]">Showing up to 10 rows.</p>
+              <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                2) Preview
+              </h2>
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                Showing up to 10 rows.
+              </p>
 
               <div className="mt-4 overflow-auto rounded-lg border bg-white">
                 {previewRows.length === 0 ? (
@@ -359,8 +365,10 @@ function AgentPanel({
       <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-medium">3) Ask the Agent</h2>
-            <p className="text-sm text-neutral-600">
+            <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+              3) Ask the Agent
+            </h2>
+            <p className="text-sm text-[var(--color-text-secondary)]">
               {hasData ? (
                 <>
                   Data loaded: <span className="font-medium">{rowsCount}</span>{" "}
@@ -494,8 +502,10 @@ function AgentPanel({
       </section>
 
       <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-medium">4) Results</h2>
-        <p className="text-sm text-neutral-600">
+        <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+          4) Results
+        </h2>
+        <p className="text-sm text-[var(--color-text-secondary)]">
           Agent output will appear here.
         </p>
 
