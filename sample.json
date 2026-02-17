@@ -1,0 +1,5 @@
+[
+  { "month": "2025-01", "consumption": 1200, "cost": 230 },
+  { "month": "2025-02", "consumption": 1180, "cost": 225 },
+  { "month": "2025-03", "consumption": 1800, "cost": 340 }
+]
