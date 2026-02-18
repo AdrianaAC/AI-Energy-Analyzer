@@ -46,10 +46,10 @@ export async function POST(req: Request) {
       normalizedMessage.includes("email") ||
       normalizedMessage.includes("e-mail");
 
-    // We store tool outputs so we can always produce a final answer.
+ 
     const toolOutputs: Record<string, unknown> = {};
 
-    // 1) Planner step: model can call tools.
+    
     await generateText({
       model: openaiProvider(modelId),
       system: `
@@ -106,7 +106,7 @@ Rules:
       },
     });
 
-    // 2) Writer step: guarantees a stable final answer.
+
     const fallbackAnomalies =
       toolOutputs.detectAnomalies ?? detectAnomalies(rows);
 
