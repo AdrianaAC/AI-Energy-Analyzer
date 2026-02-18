@@ -468,34 +468,26 @@ function AgentPanel({
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-(--color-text-primary)">
+            <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
               3) Ask the Agent
             </h2>
-            <p className="text-sm text-(--color-text-secondary)">
-              {hasData ? (
-                <>
-                  Data loaded: <span className="font-medium">{rowsCount}</span>{" "}
-                  rows.
-                </>
-              ) : (
-                "Load data first (upload or sample) to enable analysis."
-              )}
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              Data loaded: {rows.length} rows.
             </p>
           </div>
 
           <span
             className={`rounded-full px-3 py-1 text-xs font-medium ${
-              hasData
-                ? "bg-(--color-brand)/10 text-(--color-brand)"
+              rows.length > 0
+                ? "bg-[var(--color-brand)]/10 text-[var(--color-brand)]"
                 : "bg-gray-100 text-gray-700"
             }`}
           >
-            {hasData ? "Ready" : "Waiting for data"}
+            {rows.length > 0 ? "Ready" : "Waiting for data"}
           </span>
         </div>
-
         <div className="mt-4 space-y-3">
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="space-y-1">
@@ -503,7 +495,7 @@ function AgentPanel({
                 Facility name
               </label>
               <input
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-(--color-brand)/20 focus:border-(--color-brand) transition"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/20"
                 value={facilityName}
                 onChange={(e) => setFacilityName(e.target.value)}
                 placeholder="e.g., Lisbon HQ"
@@ -519,7 +511,7 @@ function AgentPanel({
               </label>
               <select
                 id="quick-prompts"
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-(--color-brand)/20 focus:border-(--color-brand) transition"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/20"
                 onChange={(e) => {
                   const v = e.target.value;
                   if (v) setMessage(v);
@@ -543,7 +535,7 @@ function AgentPanel({
           </div>
 
           <textarea
-            className="min-h-30 w-full resize-y rounded-lg border border-gray-300 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-(--color-brand)/20 focus:border-(--color-brand) transition"
+            className="mt-3 min-h-[120px] w-full resize-y rounded-xl border border-gray-300 bg-[var(--color-surface)] p-3 text-sm outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/20"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Ask something like: Detect anomalies, suggest improvements, generate a summary..."
@@ -552,7 +544,7 @@ function AgentPanel({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="rounded-lg bg-(--color-brand) px-4 py-2 text-sm font-medium text-white hover:bg-(--color-brand-dark) transition-colors disabled:opacity-50"
+              className="rounded-lg bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)] transition-colors disabled:opacity-50"
               disabled={!hasData || message.trim().length === 0}
               onClick={async () => {
                 try {
@@ -603,9 +595,9 @@ function AgentPanel({
             </button>
           </div>
 
-          <p className="text-xs text-neutral-500">
-            Next step: connect this button to an API route that runs an AI agent
-            with tool calling.
+          <p className="mt-3 text-xs text-[var(--color-text-secondary)]">
+            Tip: try asking for anomalies, optimizations, or an email draft for
+            the facility manager.
           </p>
         </div>
       </section>
