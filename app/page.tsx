@@ -59,7 +59,7 @@ function normalizeRows(inputRows: Row[]) {
 function normalizeHeaderKey(key: string) {
   const k = key.trim().toLowerCase();
 
-  const monthKeys = ["month", "date", "period", "mes", "mês", "data"];
+  const monthKeys = ["month", "date", "period", "mes", "m\u00EAs", "data"];
   const consumptionKeys = [
     "consumption",
     "kwh",
@@ -75,7 +75,7 @@ function normalizeHeaderKey(key: string) {
     "value",
     "custo",
     "preco",
-    "preço",
+    "pre\u00E7o",
     "valor",
   ];
 
@@ -107,7 +107,7 @@ function detectDelimiter(firstLine: string) {
 }
 
 export default function Home() {
-  const [fileName, setFileName] = useState<string>("");
+  const [fileName, setFileName] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [error, setError] = useState<string>("");
 
@@ -186,57 +186,114 @@ export default function Home() {
     reader.readAsText(file);
   }
 
-  return (
-    <main className="min-h-screen bg-[var(--color-surface)] p-8">
-      <div className="mx-auto max-w-6xl space-y-6">
-      <header className="space-y-3">
-  <div className="flex items-center gap-3">
-    <div className="h-10 w-10 rounded-xl bg-[var(--color-brand)]/10 flex items-center justify-center text-[var(--color-brand)] font-bold">
-      G2C
-    </div>
-    <div>
-      <h1 className="text-3xl font-semibold text-[var(--color-text-primary)]">
-        Energy Intelligence Dashboard
-      </h1>
-      <p className="text-sm text-[var(--color-text-secondary)]">
-        Corporate-grade insights for sustainability & operational efficiency
-      </p>
-    </div>
-  </div>
-</header>
+  const avgConsumption =
+    rows.length > 0
+      ? rows.reduce((sum, r) => sum + Number(r.consumption ?? 0), 0) /
+        rows.length
+      : 0;
 
+  const threshold = avgConsumption * 1.3;
+
+  const peakRow =
+    rows.length > 0
+      ? rows.reduce((max, r) =>
+          Number(r.consumption ?? 0) > Number(max.consumption ?? 0) ? r : max,
+        )
+      : null;
+
+  const peakMonth = peakRow ? String(peakRow.month ?? "-") : "-";
+  const peakValue = peakRow ? Number(peakRow.consumption ?? 0) : 0;
+
+  return (
+    <main className="min-h-screen bg-(--color-surface) p-8">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <header className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-(--color-brand)/10 flex items-center justify-center text-(--color-brand) font-bold">
+              G2C
+            </div>
+            <div>
+              <h1 className="text-3xl font-semibold text-(--color-text-primary)">
+                Energy Intelligence Dashboard
+              </h1>
+              <p className="text-sm text-(--color-text-secondary)">
+                Corporate-grade insights for sustainability & operational
+                efficiency
+              </p>
+            </div>
+          </div>
+        </header>
 
         {/* Responsive 2-column layout */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* LEFT: Upload + Preview */}
           <div className="space-y-6">
             <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">1) Upload</h2>
-              <p className="text-sm text-[var(--color-text-secondary)]">
+              <h2 className="text-lg font-semibold text-(--color-text-primary)">
+                1) Upload
+              </h2>
+              <p className="text-sm text-(--color-text-secondary)">
                 Accepted: <span className="font-medium">.json</span>,{" "}
-                <span className="font-medium">.csv</span> (auto-detect “,” /
-                “;”).
+                <span className="font-medium">.csv</span> (auto-detect comma or
+                semicolon delimiter).
               </p>
 
-              <div className="mt-3">
-                <label
-                  htmlFor="file-upload"
-                  className="block text-sm font-medium text-neutral-700"
+              <div className="mt-4">
+                <div
+                  className={`relative rounded-2xl border-2 p-8 text-center transition ${
+                    fileName
+                      ? "border-(--color-brand)/30 bg-(--color-brand)/5"
+                      : "border-dashed border-gray-300 bg-(--color-surface) hover:border-(--color-brand) hover:bg-white"
+                  }`}
                 >
-                  Upload file
-                </label>
-                <input
-                  id="file-upload"
-                  type="file"
-                  accept=".json,application/json,.csv,text/csv"
-                  className="block w-full text-sm"
-                  placeholder="Select a JSON or CSV file"
-                  title="Select a JSON or CSV file"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFile(file);
-                  }}
-                />
+                  <input
+                    type="file"
+                    accept=".json,application/json,.csv,text/csv"
+                    className="absolute inset-0 cursor-pointer opacity-0"
+                    title="Upload energy report file"
+                    placeholder="Select a .json or .csv file"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFile(file);
+                    }}
+                  />
+
+                  <div className="space-y-2 pointer-events-none">
+                    <div
+                      className={`text-3xl ${
+                        fileName ? "text-green-600" : "text-(--color-text-secondary)"
+                      }`}
+                    >
+                      {fileName ? "✓" : "↑"}
+                    </div>
+
+                    <p className="text-sm font-medium text-(--color-text-primary)">
+                      {fileName ? "Data ready" : "Upload Energy Report"}
+                    </p>
+
+                    <p className="text-xs text-(--color-text-secondary)">
+                      {fileName
+                        ? "You can now preview the data and run the AI analysis."
+                        : "Drag & drop your CSV or JSON file here"}
+                    </p>
+
+                    {!fileName ? (
+                      <p className="text-xs text-(--color-text-secondary)">
+                        or{" "}
+                        <span className="text-(--color-brand) font-medium">
+                          click to select a file
+                        </span>
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+
+                {fileName ? (
+                  <div className="mt-3 rounded-lg border border-(--color-brand)/25 bg-(--color-brand)/5 px-4 py-2 text-sm text-(--color-brand)">
+                    File loaded:{" "}
+                    <span className="font-medium">{fileName}</span>
+                  </div>
+                ) : null}
               </div>
 
               <div className="mt-3 flex flex-wrap gap-2">
@@ -277,55 +334,117 @@ export default function Home() {
             </section>
 
             <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">2) Preview</h2>
-              <p className="text-sm text-[var(--color-text-secondary)]">Showing up to 10 rows.</p>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-(--color-text-primary)">
+                    2) Preview
+                  </h2>
+                  <p className="text-sm text-(--color-text-secondary)">
+                    Showing up to 10 rows.
+                  </p>
+                </div>
 
-              <div className="mt-4 overflow-auto rounded-lg border bg-white">
-                {previewRows.length === 0 ? (
-                  <div className="p-4 text-sm text-neutral-600">
-                    No data yet.
-                  </div>
-                ) : (
-                  <table className="w-full text-sm">
-                    <thead className="bg-black/5">
-                      <tr>
-                        {Object.keys(previewRows[0]).map((key) => (
-                          <th
-                            key={key}
-                            className="px-3 py-2 text-left font-medium"
-                          >
-                            {key}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {previewRows.map((row, idx) => (
-                        <tr key={idx} className="border-t">
-                          {Object.keys(previewRows[0]).map((key) => (
-                            <td key={key} className="px-3 py-2">
-                              {row[key] === null ? "" : String(row[key])}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+                {rows.length > 0 ? (
+                  <span className="rounded-full bg-(--color-brand)/10 px-3 py-1 text-xs font-medium text-(--color-brand)">
+                    Loaded {rows.length} rows
+                  </span>
+                ) : null}
               </div>
 
+              {/* KPI cards (OUTSIDE the table container) */}
               {rows.length > 0 ? (
-                <p className="mt-2 text-xs text-neutral-500">
-                  Loaded {rows.length} rows.
-                </p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-(--color-brand)/20 bg-(--color-brand)/5 p-4">
+                    <div className="text-xs text-(--color-text-secondary)">
+                      Average
+                    </div>
+                    <div className="mt-1 text-xl font-semibold text-(--color-text-primary)">
+                      {avgConsumption.toFixed(0)}
+                    </div>
+                    <div className="mt-1 text-xs text-(--color-text-secondary)">
+                      units per period
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-(--color-brand)/20 bg-(--color-brand)/5 p-4">
+                    <div className="text-xs text-(--color-text-secondary)">
+                      Threshold
+                    </div>
+                    <div className="mt-1 text-xl font-semibold text-(--color-text-primary)">
+                      {threshold.toFixed(0)}
+                    </div>
+                    <div className="mt-1 text-xs text-(--color-text-secondary)">
+                      avg x 1.3
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-(--color-brand)/20 bg-(--color-brand)/5 p-4">
+                    <div className="text-xs text-(--color-text-secondary)">
+                      Peak Month
+                    </div>
+                    <div className="mt-1 text-xl font-semibold text-(--color-text-primary)">
+                      {peakMonth}
+                    </div>
+                    <div className="mt-1 text-xs text-(--color-text-secondary)">
+                      {peakValue ? `${peakValue.toFixed(0)} units` : "-"}
+                    </div>
+                  </div>
+                </div>
               ) : null}
+
+              {/* Table container (ONLY table / empty state) */}
+              <div className="mt-4 overflow-hidden rounded-2xl border border-(--color-brand)/20 bg-white">
+                {previewRows.length === 0 ? (
+                  <div className="p-6 text-sm text-(--color-text-secondary)">
+                    No data yet. Upload a file or use sample data.
+                  </div>
+                ) : (
+                  <div className="overflow-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-(--color-brand)/10 border-b border-(--color-brand)/15">
+                          {Object.keys(previewRows[0]).map((key) => (
+                            <th
+                              key={key}
+                              className="px-4 py-3 text-left font-semibold text-(--color-brand)"
+                            >
+                              {key}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {previewRows.map((row, idx) => (
+                          <tr
+                            key={idx}
+                            className={`transition-colors hover:bg-(--color-brand)/5 ${
+                              idx % 2 === 0
+                                ? "bg-white"
+                                : "bg-(--color-brand)/5"
+                            }`}
+                          >
+                            {Object.keys(previewRows[0]).map((key) => (
+                              <td
+                                key={key}
+                                className="px-4 py-3 text-(--color-text-primary)"
+                              >
+                                {row[key] === null ? "" : String(row[key])}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </section>
           </div>
 
           {/* RIGHT: Agent Panel */}
           <AgentPanel
             hasData={rows.length > 0}
-            rowsCount={rows.length}
             rows={rows}
           />
         </div>
@@ -336,53 +455,149 @@ export default function Home() {
 
 function AgentPanel({
   hasData,
-  rowsCount,
   rows,
 }: {
   hasData: boolean;
-  rowsCount: number;
   rows: Row[];
 }) {
   const [message, setMessage] = useState(
-    "Find anomalies and suggest 3 optimization ideas. Also draft an email to the facility manager.",
+    "Find anomalies and suggest 3 optimization ideas.",
   );
   const [facilityName, setFacilityName] = useState("Main Facility");
   const [resultText, setResultText] = useState<string>("");
-  const [resultJson, setResultJson] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<"answer" | "tools" | "raw">(
-    "answer",
-  );
+  type AgentResult = {
+    finalText?: string;
+    toolsUsed?: string[];
+    toolOutputs?: {
+      draftEmailToFacilityManager?: {
+        subject?: string;
+        body?: string;
+      };
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
+
+  const [resultJson, setResultJson] = useState<AgentResult | null>(null);
   const email = resultJson?.toolOutputs?.draftEmailToFacilityManager ?? null;
+  const finalText: string = resultJson?.finalText ?? resultText ?? "";
+  async function copyToClipboard(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+  }
+
+  function downloadTextFile(filename: string, content: string) {
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    URL.revokeObjectURL(url);
+  }
+
+  const toolsUsed = (resultJson?.toolsUsed ?? []).join(", ") || "-";
+
+  const reportText = resultJson
+    ? [
+        "Energy Intelligence Dashboard - Report",
+        `Generated: ${new Date().toISOString()}`,
+        "",
+        "User request:",
+        message || "-",
+        "",
+        `Tools used: ${toolsUsed}`,
+        "",
+        "Agent answer:",
+        finalText || "-",
+        "",
+        email
+          ? [
+              "Draft email:",
+              `Subject: ${email.subject}`,
+              "",
+              email.body,
+              "",
+            ].join("\n")
+          : "Draft email: -",
+        "",
+        "Tool outputs (raw):",
+        JSON.stringify(resultJson.toolOutputs ?? {}, null, 2),
+      ].join("\n")
+    : "";
+
+  function stripEmailSection(text: string) {
+    const markers = ["draft email", "email draft", "subject:", "body:"];
+    const lower = text.toLowerCase();
+
+    const idx = markers
+      .map((m) => lower.indexOf(m))
+      .filter((i) => i >= 0)
+      .sort((a, b) => a - b)[0];
+
+    return idx >= 0 ? text.slice(0, idx).trim() : text.trim();
+  }
+
+  const answerText = email ? stripEmailSection(finalText) : finalText;
+  const answerSections = (() => {
+    const text = answerText.trim();
+    if (!text) return [];
+
+    const lines = text.split("\n");
+    const sections: string[] = [];
+    let current: string[] = [];
+
+    for (const line of lines) {
+      if (/^\s*\d+\)\s+/.test(line) && current.length > 0) {
+        sections.push(current.join("\n").trim());
+        current = [line];
+      } else {
+        current.push(line);
+      }
+    }
+
+    if (current.length > 0) {
+      sections.push(current.join("\n").trim());
+    }
+
+    return sections.filter(Boolean);
+  })();
 
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-medium">3) Ask the Agent</h2>
-            <p className="text-sm text-neutral-600">
-              {hasData ? (
-                <>
-                  Data loaded: <span className="font-medium">{rowsCount}</span>{" "}
-                  rows.
-                </>
-              ) : (
-                "Load data first (upload or sample) to enable analysis."
-              )}
+            <h2 className="text-lg font-semibold text-(--color-text-primary)">
+              3) Ask the Agent
+            </h2>
+            <p className="text-sm text-(--color-text-secondary)">
+              Data loaded: {rows.length} rows.
             </p>
           </div>
 
           <span
             className={`rounded-full px-3 py-1 text-xs font-medium ${
-              hasData
-                ? "bg-[var(--color-brand)]/10 text-[var(--color-brand)]"
+              rows.length > 0
+                ? "bg-(--color-brand)/10 text-(--color-brand)"
                 : "bg-gray-100 text-gray-700"
             }`}
           >
-            {hasData ? "Ready" : "Waiting for data"}
+            {rows.length > 0 ? "Ready" : "Waiting for data"}
           </span>
         </div>
-
         <div className="mt-4 space-y-3">
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="space-y-1">
@@ -390,7 +605,7 @@ function AgentPanel({
                 Facility name
               </label>
               <input
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--color-brand)]/20 focus:border-[var(--color-brand)] transition"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-(--color-brand) focus:ring-2 focus:ring-(--color-brand)/20"
                 value={facilityName}
                 onChange={(e) => setFacilityName(e.target.value)}
                 placeholder="e.g., Lisbon HQ"
@@ -398,11 +613,15 @@ function AgentPanel({
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-neutral-700">
+              <label
+                htmlFor="quick-prompts"
+                className="text-xs font-medium text-neutral-700"
+              >
                 Quick prompts
               </label>
               <select
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--color-brand)]/20 focus:border-[var(--color-brand)] transition"
+                id="quick-prompts"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-(--color-brand) focus:ring-2 focus:ring-(--color-brand)/20"
                 onChange={(e) => {
                   const v = e.target.value;
                   if (v) setMessage(v);
@@ -410,7 +629,7 @@ function AgentPanel({
                 defaultValue=""
               >
                 <option value="" disabled>
-                  Choose…
+                  Choose...
                 </option>
                 <option value="Find anomalies and suggest 3 optimization ideas.">
                   Anomalies + optimizations
@@ -426,7 +645,7 @@ function AgentPanel({
           </div>
 
           <textarea
-            className="min-h-[120px] w-full resize-y rounded-lg border border-gray-300 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-[var(--color-brand)]/20 focus:border-[var(--color-brand)] transition"
+            className="mt-3 min-h-[120px] w-full resize-y rounded-xl border border-gray-300 bg-(--color-surface) p-3 text-sm outline-none transition focus:border-(--color-brand) focus:ring-2 focus:ring-(--color-brand)/20"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Ask something like: Detect anomalies, suggest improvements, generate a summary..."
@@ -435,7 +654,7 @@ function AgentPanel({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="rounded-lg bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)] transition-colors disabled:opacity-50"
+              className="rounded-lg bg-(--color-brand) px-4 py-2 text-sm font-medium text-white hover:bg-(--color-brand-dark) transition-colors disabled:opacity-50"
               disabled={!hasData || message.trim().length === 0}
               onClick={async () => {
                 try {
@@ -451,7 +670,7 @@ function AgentPanel({
                   const text = await res.text();
 
                   if (!res.ok) {
-                    setResultText(`❌ API error (${res.status})\n${text}`);
+                    setResultText(`[ERROR] API error (${res.status})\n${text}`);
                     return;
                   }
 
@@ -459,15 +678,14 @@ function AgentPanel({
                     const parsed = JSON.parse(text);
                     setResultJson(parsed);
                     setResultText(parsed.finalText ?? "");
-                    setActiveTab("answer");
                   } catch {
                     // fallback if server responds with plain text
                     setResultText(
-                      text.trim() ? text : "⚠️ Empty response from API.",
+                      text.trim() ? text : "[WARN] Empty response from API.",
                     );
                   }
                 } catch (err) {
-                  setResultText(`❌ Request failed\n${String(err)}`);
+                  setResultText(`[ERROR] Request failed\n${String(err)}`);
                 }
               }}
             >
@@ -486,123 +704,181 @@ function AgentPanel({
             </button>
           </div>
 
-          <p className="text-xs text-neutral-500">
-            Next step: connect this button to an API route that runs an AI agent
-            with tool calling.
+          <p className="mt-3 text-xs text-(--color-text-secondary)">
+            Tip: try asking for anomalies, optimizations, or an email draft for
+            the facility manager.
           </p>
         </div>
       </section>
-
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-medium">4) Results</h2>
-        <p className="text-sm text-neutral-600">
-          Agent output will appear here.
-        </p>
-
-        {resultJson ? (
-          <div className="mt-4 space-y-3">
-            <div className="flex flex-wrap gap-2">
+      <section className="rounded-2xl border border-(--color-brand)/25 bg-(--color-brand)/3 p-6 shadow-sm">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-(--color-text-primary)">
+              4) Results
+            </h2>
+            <p className="text-sm text-(--color-text-secondary)">
+              AI agent output and tool execution proof.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {resultJson ? (
               <button
-                className={`rounded-md border px-3 py-1.5 text-sm font-medium ${
-                  activeTab === "answer" ? "bg-black/5" : "hover:bg-black/5"
-                }`}
-                onClick={() => setActiveTab("answer")}
+                type="button"
+                onClick={() =>
+                  downloadTextFile(
+                    `energy-report-${new Date().toISOString().slice(0, 10)}.txt`,
+                    reportText,
+                  )
+                }
+                className="rounded-lg bg-(--color-brand) px-3 py-2 text-xs font-medium text-white hover:bg-(--color-brand-dark) transition"
               >
-                Agent answer
+                Download report
               </button>
-              <button
-                className={`rounded-md border px-3 py-1.5 text-sm font-medium ${
-                  activeTab === "tools" ? "bg-black/5" : "hover:bg-black/5"
-                }`}
-                onClick={() => setActiveTab("tools")}
-              >
-                Tools used
-              </button>
-              <button
-                className={`rounded-md border px-3 py-1.5 text-sm font-medium ${
-                  activeTab === "raw" ? "bg-black/5" : "hover:bg-black/5"
-                }`}
-                onClick={() => setActiveTab("raw")}
-              >
-                Raw JSON
-              </button>
-            </div>
-
-            {activeTab === "answer" ? (
-              <div className="min-h-[180px] whitespace-pre-wrap rounded-lg border bg-white p-4 text-sm">
-                {resultJson.finalText}
-              </div>
-            ) : null}
-            {activeTab === "tools" ? (
-              <div className="rounded-lg border bg-white p-4 text-sm space-y-5">
-                {/* Tools used */}
-                <div>
-                  <div className="text-xs text-neutral-500">Tools used</div>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    {(resultJson.toolsUsed ?? []).map((t: string) => (
-                      <span
-                        key={t}
-                        className="rounded-full bg-black/5 px-3 py-1 text-xs font-medium"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Tool outputs raw JSON */}
-                <div>
-                  <div className="text-xs text-neutral-500">
-                    Tool outputs (raw)
-                  </div>
-                  <pre className="mt-2 overflow-auto rounded-md bg-black/5 p-3 text-xs">
-                    {JSON.stringify(resultJson.toolOutputs, null, 2)}
-                  </pre>
-                </div>
-
-                {/* Email preview card */}
-                {email ? (
-                  <div className="rounded-lg border p-4 bg-white shadow-sm">
-                    <div className="text-xs text-neutral-500">
-                      Email preview
-                    </div>
-
-                    <div className="mt-3 text-sm space-y-3">
-                      <div>
-                        <div className="font-medium">Subject</div>
-                        <div className="mt-1 rounded-md bg-black/5 p-2 text-sm">
-                          {email.subject}
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="font-medium">Body</div>
-                        <pre className="mt-1 whitespace-pre-wrap rounded-md bg-black/5 p-3 text-xs">
-                          {email.body}
-                        </pre>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-
-            {activeTab === "raw" ? (
-              <pre className="overflow-auto rounded-lg border bg-white p-4 text-xs">
-                {JSON.stringify(resultJson, null, 2)}
-              </pre>
             ) : null}
           </div>
+          {resultJson?.toolsUsed?.length ? (
+            <span className="rounded-full bg-(--color-brand)/10 px-3 py-1 text-xs font-medium text-(--color-brand)">
+              Tools: {resultJson.toolsUsed.length}
+            </span>
+          ) : null}
+        </div>
+
+        {/* Empty state */}
+        {!finalText ? (
+          <div className="mt-4 rounded-xl border border-gray-200 bg-(--color-surface) p-5 text-sm text-(--color-text-secondary)">
+            No results yet. Run an analysis to see the agent output here.
+          </div>
         ) : (
-          <div className="mt-4 min-h-[180px] whitespace-pre-wrap rounded-lg border bg-white p-4 text-sm">
-            {resultText ? (
-              resultText
-            ) : (
-              <span className="text-neutral-500">No results yet.</span>
-            )}
+          <div className="mt-4 grid gap-4">
+            {/* Summary / Answer */}
+            <div className="rounded-2xl border border-(--color-brand)/25 bg-white p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-xs font-medium uppercase tracking-wide text-(--color-brand)">
+                  Agent answer
+                </div>
+                <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-(--color-text-secondary)">
+                  Generated
+                </span>
+              </div>
+              <div className="mt-4 space-y-4 text-sm text-(--color-text-primary)">
+                {(answerSections.length > 0 ? answerSections : [answerText])
+                  .filter((chunk) => chunk.trim().length > 0)
+                  .map((chunk, i) => (
+                  <div
+                    key={i}
+                    className="rounded-xl bg-(--color-surface) p-4"
+                  >
+                    <div className="whitespace-pre-wrap leading-relaxed">
+                      {chunk}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Email preview (if tool used) */}
+            {email ? (
+              <div className="rounded-2xl border border-gray-200 bg-white p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-xs font-medium uppercase tracking-wide text-(--color-brand)">
+                    Draft email
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      copyToClipboard(
+                        `Subject: ${email.subject ?? ""}\n\n${email.body ?? ""}`,
+                      )
+                    }
+                    className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition"
+                  >
+                    Copy all
+                  </button>
+                </div>
+
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="text-xs text-(--color-text-secondary)">
+                        Subject
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(email.subject ?? "")}
+                        className="rounded-md bg-(--color-brand)/10 px-2 py-1 text-[10px] font-semibold text-(--color-brand) hover:bg-(--color-brand)/15 transition"
+                      >
+                        Copy
+                      </button>
+                    </div>
+
+                    <div className="mt-1 rounded-lg bg-(--color-surface) p-3 text-sm text-(--color-text-primary)">
+                      {email.subject}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="text-xs text-(--color-text-secondary)">
+                        Body
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(email.body ?? "")}
+                        className="rounded-md bg-(--color-brand)/10 px-2 py-1 text-[10px] font-semibold text-(--color-brand) hover:bg-(--color-brand)/15 transition"
+                      >
+                        Copy
+                      </button>
+                    </div>
+
+                    <pre className="mt-1 whitespace-pre-wrap rounded-lg bg-(--color-surface) p-3 text-xs text-(--color-text-primary)">
+                      {email.body}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {/* Tool proof (collapsible) */}
+            {resultJson ? (
+              <details className="rounded-2xl border border-gray-200 bg-white p-5">
+                <summary className="cursor-pointer list-none">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-xs font-medium uppercase tracking-wide text-(--color-brand)">
+                      Tool proof (debug)
+                    </div>
+                    <div className="text-xs text-(--color-text-secondary)">
+                      Tools used:{" "}
+                      {(resultJson.toolsUsed ?? []).join(", ") || "-"}
+                    </div>
+                  </div>
+                </summary>
+
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <div className="text-xs text-(--color-text-secondary)">
+                      Tool outputs
+                    </div>
+                    <pre className="mt-2 overflow-auto rounded-lg bg-(--color-surface) p-3 text-xs text-(--color-text-primary)">
+                      {JSON.stringify(resultJson.toolOutputs, null, 2)}
+                    </pre>
+                  </div>
+
+                  <div>
+                    <div className="text-xs text-(--color-text-secondary)">
+                      Raw response
+                    </div>
+                    <pre className="mt-2 overflow-auto rounded-lg bg-(--color-surface) p-3 text-xs text-(--color-text-primary)">
+                      {JSON.stringify(resultJson, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              </details>
+            ) : null}
           </div>
         )}
       </section>
     </div>
   );
 }
+
