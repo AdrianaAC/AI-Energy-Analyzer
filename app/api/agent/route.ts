@@ -1,6 +1,10 @@
-import { createOpenAI } from "@ai-sdk/openai";
+﻿import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { z } from "zod";
+import {
+  detectAnomalies,
+  draftEmailToFacilityManager,
+} from "@/lib/energy-tools";
 
 export const runtime = "nodejs";
 
@@ -25,62 +29,6 @@ const RowsSchema = z.array(
 
 type Row = z.infer<typeof RowsSchema>[number];
 
-function detectAnomalies(rows: Row[]) {
-  const avg = rows.reduce((sum, r) => sum + r.consumption, 0) / rows.length;
-  const threshold = avg * 1.3;
-  const anomalies = rows.filter((r) => r.consumption > threshold);
-
-  return {
-    average: avg,
-    threshold,
-    anomalies,
-    summary:
-      anomalies.length === 0
-        ? "No major anomalies detected."
-        : `Detected ${anomalies.length} anomaly/anomalies above ${threshold.toFixed(2)}.`,
-  };
-}
-
-function draftEmailToFacilityManager(params: {
-  facilityName: string;
-  month: string;
-  anomalyConsumption: number;
-  threshold: number;
-  cost?: number;
-  recommendations: string[];
-}) {
-  const {
-    facilityName,
-    month,
-    anomalyConsumption,
-    threshold,
-    cost,
-    recommendations,
-  } = params;
-
-  const recs = recommendations.map((r) => `- ${r}`).join("\n");
-
-  return {
-    subject: `Energy consumption alert — ${facilityName} — ${month}`,
-    body: `Hi team,
-
-We detected an unusual energy consumption spike for ${facilityName} in ${month}.
-
-Details:
-- Consumption: ${anomalyConsumption} units (threshold: ${threshold.toFixed(2)} units)${
-      typeof cost === "number" ? `\n- Cost: ${cost}` : ""
-    }
-
-Recommended next steps:
-${recs}
-
-If you'd like, I can help set up monitoring alerts and a monthly anomaly report.
-
-Best regards,
-Energy Analyzer AI`,
-  };
-}
-
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as {
@@ -93,17 +41,15 @@ export async function POST(req: Request) {
 
     const rows = RowsSchema.parse(body.rows);
     const message = String(body.message ?? "");
-    const normalizedMessage = (message ?? "").toLowerCase();
+    const normalizedMessage = message.toLowerCase();
     const wantsEmail =
       normalizedMessage.includes("email") ||
       normalizedMessage.includes("e-mail");
 
-    // We will store tool outputs here so we can always produce a final answer
+    // We store tool outputs so we can always produce a final answer.
     const toolOutputs: Record<string, unknown> = {};
 
-    // 1) "Planner" step: ask model what to do (it can call tools)
-    // Note: Some OpenRouter/tool-call flows may not output final text, so we only use this step
-    // to collect tool outputs, not as the final response.
+    // 1) Planner step: model can call tools.
     await generateText({
       model: openaiProvider(modelId),
       system: `
@@ -160,8 +106,7 @@ Rules:
       },
     });
 
-    // 2) Guarantee a final response: "Writer" step
-    // If the agent never called detectAnomalies, we still provide a sensible response.
+    // 2) Writer step: guarantees a stable final answer.
     const fallbackAnomalies =
       toolOutputs.detectAnomalies ?? detectAnomalies(rows);
 
@@ -193,7 +138,7 @@ ${JSON.stringify({ ...toolOutputs, fallbackAnomalies }, null, 2)}
 
     const text =
       final.text?.trim() ||
-      `⚠️ Model returned empty text.\n\nTool outputs:\n${JSON.stringify(
+      `[WARN] Model returned empty text.\n\nTool outputs:\n${JSON.stringify(
         { ...toolOutputs, fallbackAnomalies },
         null,
         2,
@@ -210,6 +155,6 @@ ${JSON.stringify({ ...toolOutputs, fallbackAnomalies }, null, 2)}
     });
   } catch (err) {
     const msg = err instanceof Error ? (err.stack ?? err.message) : String(err);
-    return new Response(`❌ API crashed:\n${msg}`, { status: 500 });
+    return new Response(`[ERROR] API crashed:\n${msg}`, { status: 500 });
   }
 }
