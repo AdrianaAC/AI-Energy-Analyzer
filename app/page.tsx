@@ -107,7 +107,7 @@ function detectDelimiter(firstLine: string) {
 }
 
 export default function Home() {
-  const [fileName, setFileName] = useState<string>("");
+  const [fileName, setFileName] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [error, setError] = useState<string>("");
 
@@ -186,6 +186,24 @@ export default function Home() {
     reader.readAsText(file);
   }
 
+  const avgConsumption =
+    rows.length > 0
+      ? rows.reduce((sum, r) => sum + Number(r.consumption ?? 0), 0) /
+        rows.length
+      : 0;
+
+  const threshold = avgConsumption * 1.3;
+
+  const peakRow =
+    rows.length > 0
+      ? rows.reduce((max, r) =>
+          Number(r.consumption ?? 0) > Number(max.consumption ?? 0) ? r : max,
+        )
+      : null;
+
+  const peakMonth = peakRow?.month ?? "—";
+  const peakValue = peakRow ? Number(peakRow.consumption ?? 0) : 0;
+
   return (
     <main className="min-h-screen bg-(--color-surface) p-8">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -220,25 +238,40 @@ export default function Home() {
                 “;”).
               </p>
 
-              <div className="mt-3">
-                <label
-                  htmlFor="file-upload"
-                  className="block text-sm font-medium text-neutral-700"
-                >
-                  Upload file
-                </label>
-                <input
-                  id="file-upload"
-                  type="file"
-                  accept=".json,application/json,.csv,text/csv"
-                  className="block w-full text-sm"
-                  placeholder="Select a JSON or CSV file"
-                  title="Select a JSON or CSV file"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFile(file);
-                  }}
-                />
+              <div className="mt-4">
+                <div className="relative rounded-2xl border-2 border-dashed border-gray-300 bg-[var(--color-surface)] p-8 text-center transition hover:border-[var(--color-brand)] hover:bg-white">
+                  <input
+                    type="file"
+                    accept=".json,application/json,.csv,text/csv"
+                    className="absolute inset-0 cursor-pointer opacity-0"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFile(file);
+                    }}
+                  />
+                  {fileName && (
+                    <div className="mt-3 rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-700">
+                      ✔ File loaded:{" "}
+                      <span className="font-medium">{fileName}</span>
+                    </div>
+                  )}
+
+                  <div className="space-y-2 pointer-events-none">
+                    <div className="text-3xl">⬆</div>
+                    <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                      Upload Energy Report
+                    </p>
+                    <p className="text-xs text-[var(--color-text-secondary)]">
+                      Drag & drop your CSV or JSON file here
+                    </p>
+                    <p className="text-xs text-[var(--color-text-secondary)]">
+                      or{" "}
+                      <span className="text-[var(--color-brand)] font-medium">
+                        click to select a file
+                      </span>
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="mt-3 flex flex-wrap gap-2">
@@ -279,52 +312,111 @@ export default function Home() {
             </section>
 
             <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-(--color-text-primary)">
-                2) Preview
-              </h2>
-              <p className="text-sm text-(--color-text-secondary)">
-                Showing up to 10 rows.
-              </p>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                    2) Preview
+                  </h2>
+                  <p className="text-sm text-[var(--color-text-secondary)]">
+                    Showing up to 10 rows.
+                  </p>
+                </div>
 
-              <div className="mt-4 overflow-auto rounded-lg border bg-white">
-                {previewRows.length === 0 ? (
-                  <div className="p-4 text-sm text-neutral-600">
-                    No data yet.
-                  </div>
-                ) : (
-                  <table className="w-full text-sm">
-                    <thead className="bg-black/5">
-                      <tr>
-                        {Object.keys(previewRows[0]).map((key) => (
-                          <th
-                            key={key}
-                            className="px-3 py-2 text-left font-medium"
-                          >
-                            {key}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {previewRows.map((row, idx) => (
-                        <tr key={idx} className="border-t">
-                          {Object.keys(previewRows[0]).map((key) => (
-                            <td key={key} className="px-3 py-2">
-                              {row[key] === null ? "" : String(row[key])}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+                {rows.length > 0 ? (
+                  <span className="rounded-full bg-[var(--color-brand)]/10 px-3 py-1 text-xs font-medium text-[var(--color-brand)]">
+                    Loaded {rows.length} rows
+                  </span>
+                ) : null}
               </div>
 
+              {/* KPI cards (OUTSIDE the table container) */}
               {rows.length > 0 ? (
-                <p className="mt-2 text-xs text-neutral-500">
-                  Loaded {rows.length} rows.
-                </p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-[var(--color-brand)]/20 bg-[var(--color-brand)]/5 p-4">
+                    <div className="text-xs text-[var(--color-text-secondary)]">
+                      Average
+                    </div>
+                    <div className="mt-1 text-xl font-semibold text-[var(--color-text-primary)]">
+                      {avgConsumption.toFixed(0)}
+                    </div>
+                    <div className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                      units per period
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-[var(--color-brand)]/20 bg-[var(--color-brand)]/5 p-4">
+                    <div className="text-xs text-[var(--color-text-secondary)]">
+                      Threshold
+                    </div>
+                    <div className="mt-1 text-xl font-semibold text-[var(--color-text-primary)]">
+                      {threshold.toFixed(0)}
+                    </div>
+                    <div className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                      avg × 1.3
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-[var(--color-brand)]/20 bg-[var(--color-brand)]/5 p-4">
+                    <div className="text-xs text-[var(--color-text-secondary)]">
+                      Peak Month
+                    </div>
+                    <div className="mt-1 text-xl font-semibold text-[var(--color-text-primary)]">
+                      {peakMonth}
+                    </div>
+                    <div className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                      {peakValue ? `${peakValue.toFixed(0)} units` : "—"}
+                    </div>
+                  </div>
+                </div>
               ) : null}
+
+              {/* Table container (ONLY table / empty state) */}
+              <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--color-brand)]/20 bg-white">
+                {previewRows.length === 0 ? (
+                  <div className="p-6 text-sm text-[var(--color-text-secondary)]">
+                    No data yet. Upload a file or use sample data.
+                  </div>
+                ) : (
+                  <div className="overflow-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-[var(--color-brand)]/10 border-b border-[var(--color-brand)]/15">
+                          {Object.keys(previewRows[0]).map((key) => (
+                            <th
+                              key={key}
+                              className="px-4 py-3 text-left font-semibold text-[var(--color-brand)]"
+                            >
+                              {key}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {previewRows.map((row, idx) => (
+                          <tr
+                            key={idx}
+                            className={`transition-colors hover:bg-[var(--color-brand)]/5 ${
+                              idx % 2 === 0
+                                ? "bg-white"
+                                : "bg-[var(--color-brand)]/5"
+                            }`}
+                          >
+                            {Object.keys(previewRows[0]).map((key) => (
+                              <td
+                                key={key}
+                                className="px-4 py-3 text-[var(--color-text-primary)]"
+                              >
+                                {row[key] === null ? "" : String(row[key])}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </section>
           </div>
 
