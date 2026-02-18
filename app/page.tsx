@@ -19,16 +19,12 @@ function coerceValue(raw: unknown) {
   const s = String(raw).trim();
   if (s === "") return null;
 
-  // boolean
   if (s.toLowerCase() === "true") return true;
   if (s.toLowerCase() === "false") return false;
 
-  // number (supports "1234", "1234.56", "1,234.56", "1234,56")
   const hasComma = s.includes(",");
   const hasDot = s.includes(".");
 
-  // If it has comma but no dot => likely decimal comma: "1234,56"
-  // If it has both, we assume comma is thousands: "1,234.56"
   let normalized = s;
   if (hasComma && !hasDot) {
     normalized = s.replace(",", ".");
@@ -36,7 +32,6 @@ function coerceValue(raw: unknown) {
     normalized = s.replace(/,/g, "");
   }
 
-  // remove spaces inside numbers "1 234" -> "1234"
   normalized = normalized.replace(/\s+/g, "");
 
   if (/^-?\d+(\.\d+)?$/.test(normalized)) {
@@ -139,11 +134,9 @@ export default function Home() {
     });
 
     if (result.errors?.length) {
-      // show first error only (keeps UI clean)
       throw new Error(`CSV parse error: ${result.errors[0].message}`);
     }
 
-    // PapaParse may return empty rows if headers are weird; filter just in case
     const clean = (result.data ?? []).filter((r) => Object.keys(r).length > 0);
     if (clean.length === 0) {
       throw new Error(
@@ -157,16 +150,18 @@ export default function Home() {
   function handleFile(file: File) {
     setError("");
     setRows([]);
-    setFileName(file.name);
 
     const lower = file.name.toLowerCase();
     const isJson = lower.endsWith(".json");
     const isCsv = lower.endsWith(".csv");
 
     if (!isJson && !isCsv) {
+      setFileName(null);
       setError("Please upload a .json or .csv file.");
       return;
     }
+
+    setFileName(file.name);
 
     const reader = new FileReader();
 
@@ -224,9 +219,7 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Responsive 2-column layout */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* LEFT: Upload + Preview */}
           <div className="space-y-6">
             <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-(--color-text-primary)">
@@ -261,10 +254,12 @@ export default function Home() {
                   <div className="space-y-2 pointer-events-none">
                     <div
                       className={`text-3xl ${
-                        fileName ? "text-green-600" : "text-(--color-text-secondary)"
+                        fileName
+                          ? "text-green-600"
+                          : "text-(--color-text-secondary)"
                       }`}
                     >
-                      {fileName ? "✓" : "↑"}
+                      {fileName ? "\u2713" : "\u2191"}
                     </div>
 
                     <p className="text-sm font-medium text-(--color-text-primary)">
@@ -290,8 +285,7 @@ export default function Home() {
 
                 {fileName ? (
                   <div className="mt-3 rounded-lg border border-(--color-brand)/25 bg-(--color-brand)/5 px-4 py-2 text-sm text-(--color-brand)">
-                    File loaded:{" "}
-                    <span className="font-medium">{fileName}</span>
+                    File loaded: <span className="font-medium">{fileName}</span>
                   </div>
                 ) : null}
               </div>
@@ -314,7 +308,7 @@ export default function Home() {
                   className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   onClick={() => {
                     setError("");
-                    setFileName("");
+                    setFileName(null);
                     setRows([]);
                   }}
                 >
@@ -351,7 +345,6 @@ export default function Home() {
                 ) : null}
               </div>
 
-              {/* KPI cards (OUTSIDE the table container) */}
               {rows.length > 0 ? (
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
                   <div className="rounded-2xl border border-(--color-brand)/20 bg-(--color-brand)/5 p-4">
@@ -392,7 +385,6 @@ export default function Home() {
                 </div>
               ) : null}
 
-              {/* Table container (ONLY table / empty state) */}
               <div className="mt-4 overflow-hidden rounded-2xl border border-(--color-brand)/20 bg-white">
                 {previewRows.length === 0 ? (
                   <div className="p-6 text-sm text-(--color-text-secondary)">
@@ -442,24 +434,14 @@ export default function Home() {
             </section>
           </div>
 
-          {/* RIGHT: Agent Panel */}
-          <AgentPanel
-            hasData={rows.length > 0}
-            rows={rows}
-          />
+          <AgentPanel hasData={rows.length > 0} rows={rows} />
         </div>
       </div>
     </main>
   );
 }
 
-function AgentPanel({
-  hasData,
-  rows,
-}: {
-  hasData: boolean;
-  rows: Row[];
-}) {
+function AgentPanel({ hasData, rows }: { hasData: boolean; rows: Row[] }) {
   const [message, setMessage] = useState(
     "Find anomalies and suggest 3 optimization ideas.",
   );
@@ -679,7 +661,6 @@ function AgentPanel({
                     setResultJson(parsed);
                     setResultText(parsed.finalText ?? "");
                   } catch {
-                    // fallback if server responds with plain text
                     setResultText(
                       text.trim() ? text : "[WARN] Empty response from API.",
                     );
@@ -743,14 +724,12 @@ function AgentPanel({
           ) : null}
         </div>
 
-        {/* Empty state */}
         {!finalText ? (
           <div className="mt-4 rounded-xl border border-gray-200 bg-(--color-surface) p-5 text-sm text-(--color-text-secondary)">
             No results yet. Run an analysis to see the agent output here.
           </div>
         ) : (
           <div className="mt-4 grid gap-4">
-            {/* Summary / Answer */}
             <div className="rounded-2xl border border-(--color-brand)/25 bg-white p-5">
               <div className="flex items-center justify-between gap-3">
                 <div className="text-xs font-medium uppercase tracking-wide text-(--color-brand)">
@@ -764,19 +743,18 @@ function AgentPanel({
                 {(answerSections.length > 0 ? answerSections : [answerText])
                   .filter((chunk) => chunk.trim().length > 0)
                   .map((chunk, i) => (
-                  <div
-                    key={i}
-                    className="rounded-xl bg-(--color-surface) p-4"
-                  >
-                    <div className="whitespace-pre-wrap leading-relaxed">
-                      {chunk}
+                    <div
+                      key={i}
+                      className="rounded-xl bg-(--color-surface) p-4"
+                    >
+                      <div className="whitespace-pre-wrap leading-relaxed">
+                        {chunk}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
 
-            {/* Email preview (if tool used) */}
             {email ? (
               <div className="rounded-2xl border border-gray-200 bg-white p-5">
                 <div className="flex items-center justify-between gap-3">
@@ -838,8 +816,6 @@ function AgentPanel({
                 </div>
               </div>
             ) : null}
-
-            {/* Tool proof (collapsible) */}
             {resultJson ? (
               <details className="rounded-2xl border border-gray-200 bg-white p-5">
                 <summary className="cursor-pointer list-none">
@@ -881,4 +857,3 @@ function AgentPanel({
     </div>
   );
 }
-

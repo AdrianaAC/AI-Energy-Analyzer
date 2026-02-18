@@ -1,14 +1,21 @@
-# 🌿 Energy Intelligence Dashboard
+# Energy Intelligence Dashboard
 
-AI-Enabled Frontend & Agentic Workflow MVP
+AI-Enabled Frontend and Agentic Workflow MVP
 
-This project was developed as part of the technical challenge for the **AI-Enabled Frontend & Development Accelerator** role.
+This project was developed as part of the technical challenge for the AI-Enabled Frontend and Development Accelerator role.
 
 It demonstrates rapid AI-assisted development, agent-based workflows, deterministic tool execution, and production-oriented frontend architecture.
 
 ---
 
-## 🚀 Project Goals
+## Deliverables
+
+- Repository: `https://github.com/AdrianaAC/G2C_Challenge`
+- Live application: `https://g2-c-challenge.vercel.app/`
+
+---
+
+## Project Goals
 
 This MVP was designed to demonstrate:
 
@@ -20,51 +27,44 @@ This MVP was designed to demonstrate:
 
 ---
 
-## 🧠 High-Level Architecture
+## High-Level Architecture
 
 ### Workflow Overview
 
-User Upload
-↓
-Data Normalization (CSV/JSON parsing + header mapping)
-↓
-Frontend → /api/agent (POST)
-↓
-Agent Layer
-├─ Tool Execution (deterministic)
-└─ LLM Writer Step (reasoning & formatting)
-↓
-Structured JSON Response
-↓
-UI Rendering (Answer / Tools / Raw JSON)
+User Upload  
+-> Data Normalization (CSV/JSON parsing + header mapping)  
+-> Frontend POST to `/api/agent`  
+-> Agent Layer  
+   - Tool Execution (deterministic)  
+   - LLM Writer Step (reasoning + formatting)  
+-> Structured JSON Response  
+-> UI Rendering (answer + tool proof)
 
 The architecture separates deterministic business logic from AI reasoning to ensure reliability, auditability, and transparency.
 
 ---
 
-## 🖥 Frontend Architecture
+## Frontend Architecture
 
-- **Framework:** Next.js (App Router)
-- **Language:** TypeScript
-- **Styling:** TailwindCSS v4
-- **Structure:** Responsive 2-column dashboard layout
-- **Design Direction:** Corporate + Sustainable
+- Framework: Next.js (App Router)
+- Language: TypeScript
+- Styling: TailwindCSS v4
+- Structure: Responsive two-column dashboard
+- Design direction: Corporate + sustainable
 
 ### Key UI Principles
 
 - Clear separation between:
-  - Agent Answer
-  - Tools Used
-  - Tool Outputs
+  - Agent answer
+  - Tools used
+  - Tool outputs (debug proof)
 - Visual transparency of AI actions
 - Structured cards and interaction hierarchy
 - Smart input validation before enabling agent actions
 
-The UI was designed to simulate a production SaaS dashboard rather than a technical demo.
-
 ---
 
-## 🔧 Backend & Agent Layer
+## Backend and Agent Layer
 
 ### API Route
 
@@ -76,87 +76,77 @@ The UI was designed to simulate a production SaaS dashboard rather than a techni
 
 ### Model
 
-- Provider: OpenRouter
-- Model: `openai/gpt-4o-mini`
-- Integrated via Vercel AI SDK
+- Provider: OpenRouter (OpenAI-compatible)
+- Default model: `openai/gpt-4o-mini`
+- SDK: Vercel AI SDK
 
 ---
 
-## 🛠 Tools Implementation
+## Tools Implementation
 
-### Tool 1 — detectAnomalies
+### Tool 1: `detectAnomalies`
 
-**Purpose:**  
-Detect abnormal energy consumption based on statistical thresholding (130% of average).
+Purpose:
+Detect abnormal energy consumption using a threshold of 130% of the average.
 
-**Deterministic Logic:**
+Deterministic logic:
 
 - Calculate average consumption
 - Compute anomaly threshold
-- Identify anomalous months
-- Return structured result
+- Identify anomalous periods
+- Return structured output
 
-This tool ensures reproducibility and auditability.
+### Tool 2: `draftEmailToFacilityManager`
 
----
-
-### Tool 2 — draftEmailToFacilityManager
-
-**Purpose:**  
+Purpose:
 Generate a structured operational email based on detected anomalies.
 
-**Simulated Action Layer:**
+Notes:
 
-- Produces subject + formatted body
-- Designed to represent real-world workflow automation
-
-This demonstrates tool execution beyond simple analytical responses.
+- Produces `subject` and `body`
+- Represents a simulated action layer for workflow automation
+- Only available when user intent explicitly asks for email drafting
 
 ---
 
-## 🤖 Agentic Workflow Strategy
+## Agentic Workflow Strategy
 
-To ensure robustness and avoid unstable tool-only LLM responses:
+To ensure robust behavior:
 
-1. The agent can call tools based on user intent.
+1. The planner step can call tools based on user intent.
 2. Tool outputs are captured and stored.
-3. A final "writer step" LLM call synthesizes results.
-4. The frontend displays:
-   - Tools used
-   - Tool outputs
-   - Final structured answer
+3. A writer step synthesizes the final response.
+4. The frontend displays final answer plus tool proof.
 
 This hybrid deterministic + reasoning approach improves reliability and transparency.
 
 ---
 
-## 📊 Data Processing & Validation
+## Data Processing and Validation
 
-Robust real-world handling includes:
+Current data handling includes:
 
 - CSV delimiter auto-detection (`;` or `,`)
-- Type coercion (string → number)
-- Smart header normalization:
-  - `Date`, `Month`, `Mês` → `month`
-  - `Energy`, `kWh`, `Consumo` → `consumption`
-  - `Cost`, `Price`, `Custo` → `cost`
+- Type coercion (string to number/boolean/null where valid)
+- Header normalization, including:
+  - `Date`, `Month`, `Mes`, `Mes` (PT) -> `month`
+  - `Energy`, `kWh`, `Consumo` -> `consumption`
+  - `Cost`, `Price`, `Custo` -> `cost`
 - Zod schema validation at API level
-
-This ensures dataset resilience and reduces runtime failure.
 
 ---
 
-## ⚙️ Setup Instructions
+## Setup Instructions
 
-### 1️⃣ Install dependencies
+### 1) Install dependencies
 
 ```bash
 npm install
 ```
 
-### 2️⃣ Configure environment variables
+### 2) Configure environment variables
 
-Create a .env.local file:
+Create `.env.local`:
 
 ```bash
 OPENAI_API_KEY=your_openrouter_key
@@ -164,69 +154,101 @@ OPENAI_BASE_URL=https://openrouter.ai/api/v1
 OPENAI_MODEL=openai/gpt-4o-mini
 ```
 
-### 3️⃣ Run locally
+### 3) Run locally
 
 ```bash
 npm run dev
 ```
 
-Visit: [http://localhost:3000](http://localhost:3000)
+Open: `http://localhost:3000`
 
-## 🧪 Example Scenario
+### 4) Run unit tests
+
+```bash
+npm test
+```
+
+### 5) Run with Docker
+
+Build image:
+
+```bash
+docker build -t g2c-challenge .
+```
+
+Run container:
+
+```bash
+docker run --rm -p 3000:3000 \
+  -e OPENAI_API_KEY=your_openrouter_key \
+  -e OPENAI_BASE_URL=https://openrouter.ai/api/v1 \
+  -e OPENAI_MODEL=openai/gpt-4o-mini \
+  g2c-challenge
+```
+
+---
+
+## Example Scenario
 
 1. Load sample data
-2. Select prompt: “Find anomalies and draft an email”
+2. Select a prompt such as "Anomalies + email draft"
 3. Click Analyze
 
 The system will:
 
 - Execute anomaly detection
-- Optionally generate a communication draft
+- Optionally generate email draft output
 - Return structured response
-- Display tool proof in UI
+- Display tool proof in the UI
 
-## 📈 Development Acceleration & AI Usage Report
+---
 
-The development process leveraged AI to accelerate iteration and refinement:
+## Development Acceleration and AI Usage Report
+
+AI was used to accelerate:
 
 - Architecture planning and workflow structuring
 - Tool schema refinement
 - Prompt design for reliable tool calling
-- Iterative debugging
+- Iterative debugging and UX refinements
 - Model experimentation via OpenRouter
 
-All AI-generated code was manually reviewed, validated, and adapted to ensure clarity and maintainability.
-The final implementation reflects intentional design decisions rather than raw generated output.
+All generated code was manually reviewed and adapted.
 
-## 🏗 Architectural Decisions
+---
+
+## Architectural Decisions
 
 Why deterministic tools?
 
-- Ensures reproducibility
-- Improves auditability
-- Prevents hallucinated analytical results
+- Reproducibility
+- Auditability
+- Reduced hallucination risk in analytical results
 
-Why hybrid tool + writer approach?
-Some OpenAI-compatible tool flows may return tool-only responses.
-The writer step guarantees a stable, structured final output.
+Why planner + writer steps?
+
+- Some tool-call flows may return tool outputs without final prose
+- Writer step guarantees stable, structured final text
 
 Why structured JSON response?
 
-- Enables clear UI rendering
-- Facilitates future integration (external systems)
-- Supports extensibility
+- Simple and explicit UI rendering
+- Easier integration with external systems
+- Better future extensibility
 
-## 🔮 Future Improvements
+---
 
-- Unit tests for deterministic tools
-- Docker containerization
-- External API integration (real email service)
-- Persistent storage layer
+## Future Improvements
+
+- External integration for real email delivery
+- Persistent storage
 - Role-based access control
-- KPI dashboard metrics
+- More KPI dashboards and charts
 - Streaming responses
 
-## 🏁 Conclusion
+---
+
+## Conclusion
 
 This MVP demonstrates:
 
@@ -234,6 +256,6 @@ This MVP demonstrates:
 - Agent-based workflow orchestration
 - Deterministic + LLM hybrid architecture
 - Structured tool execution
-- Production-oriented UI thinking
+- Production-oriented UI decisions
 
-It balances speed, clarity, robustness, and architectural intent, aligning with the goals of an AI-Enabled Frontend & Agentic Workflow Developer.
+It balances speed, clarity, robustness, and architectural intent for the AI-Enabled Frontend and Agentic Workflow challenge.
