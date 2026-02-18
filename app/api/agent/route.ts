@@ -88,10 +88,15 @@ export async function POST(req: Request) {
       rows: unknown;
       facilityName?: string;
     };
+
     const facilityName = String(body.facilityName ?? "Main Facility");
 
     const rows = RowsSchema.parse(body.rows);
     const message = String(body.message ?? "");
+    const normalizedMessage = (message ?? "").toLowerCase();
+    const wantsEmail =
+      normalizedMessage.includes("email") ||
+      normalizedMessage.includes("e-mail");
 
     // We will store tool outputs here so we can always produce a final answer
     const toolOutputs: Record<string, unknown> = {};
@@ -106,7 +111,7 @@ You are an agent that can analyze energy datasets and take actions using tools.
 
 Rules:
 - If the user asks for anomalies/spikes, call detectAnomalies.
-- If the user asks to notify someone / email / message / report to a facility manager, call draftEmailToFacilityManager.
+- Only call draftEmailToFacilityManager when the user explicitly asks for an email draft to the facility manager.
 - You may call tools in any order.
 - It's OK if you do NOT produce a final natural language answer in this step. Your goal is to use tools when needed.
 `,
@@ -128,26 +133,30 @@ Rules:
           },
         },
 
-        draftEmailToFacilityManager: {
-          description:
-            "Drafts an email to the facility manager about detected anomalies and recommended actions.",
-          inputSchema: z.object({
-            facilityName: z.string().default("Main Facility"),
-            month: z.string(),
-            anomalyConsumption: z.number(),
-            threshold: z.number(),
-            cost: z.number().optional(),
-            recommendations: z.array(z.string()).min(1),
-          }),
-          execute: async (args) => {
-  const out = draftEmailToFacilityManager({
-    ...args,
-    facilityName: args.facilityName || facilityName,
-  });
-  toolOutputs.draftEmailToFacilityManager = out;
-  return out;
-},
-        },
+        ...(wantsEmail
+          ? {
+              draftEmailToFacilityManager: {
+                description:
+                  "Drafts an email to the facility manager about detected anomalies and recommended actions.",
+                inputSchema: z.object({
+                  facilityName: z.string().default("Main Facility"),
+                  month: z.string(),
+                  anomalyConsumption: z.number(),
+                  threshold: z.number(),
+                  cost: z.number().optional(),
+                  recommendations: z.array(z.string()).min(1),
+                }),
+                execute: async (args) => {
+                  const out = draftEmailToFacilityManager({
+                    ...args,
+                    facilityName: args.facilityName || facilityName,
+                  });
+                  toolOutputs.draftEmailToFacilityManager = out;
+                  return out;
+                },
+              },
+            }
+          : {}),
       },
     });
 
@@ -170,7 +179,8 @@ Output format:
 1) Summary
 2) Findings
 3) 3 Recommendations
-4) If an email draft exists, include it under "Draft email" with Subject + Body.
+4) Include a "Draft email" section only if toolOutputs.draftEmailToFacilityManager exists.
+If there is no draftEmailToFacilityManager output, do not mention draft email, subject, or body.
 `,
       prompt: `
 User request:
