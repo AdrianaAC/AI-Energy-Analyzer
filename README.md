@@ -1,108 +1,138 @@
-# 🌿 Energy Intelligence Dashboard  
-AI-Enabled Frontend & Agentic Workflow MVP  
+# 🌿 Energy Intelligence Dashboard
+
+AI-Enabled Frontend & Agentic Workflow MVP
 
 This project was developed as part of the technical challenge for the **AI-Enabled Frontend & Development Accelerator** role.
 
-It demonstrates the ability to:
-
-- Rapidly build a modern frontend interface
-- Integrate AI-powered workflows
-- Implement agent tools with execution capabilities
-- Orchestrate deterministic business logic + LLM reasoning
+It demonstrates rapid AI-assisted development, agent-based workflows, deterministic tool execution, and production-oriented frontend architecture.
 
 ---
 
-## 🚀 Overview
+## 🚀 Project Goals
 
-The application allows users to:
+This MVP was designed to demonstrate:
 
-1. Upload energy reports (CSV or JSON)
-2. Automatically normalize and validate data
-3. Interact with an AI agent to:
-   - Detect anomalies in energy consumption
-   - Generate actionable recommendations
-   - Draft an email to a facility manager
-
-The system combines deterministic data processing with AI-driven reasoning to simulate an agentic workflow.
+- Accelerated frontend development using AI-assisted tooling
+- Implementation of AI agents with tool execution capabilities
+- Structured orchestration between UI, backend logic, and LLM reasoning
+- Clear UX patterns for transparency and auditability
+- Production-oriented architectural decisions
 
 ---
 
-## 🧠 Architecture
+## 🧠 High-Level Architecture
 
-### High-Level Flow
+### Workflow Overview
 
+User Upload
+↓
+Data Normalization (CSV/JSON parsing + header mapping)
+↓
+Frontend → /api/agent (POST)
+↓
+Agent Layer
+├─ Tool Execution (deterministic)
+└─ LLM Writer Step (reasoning & formatting)
+↓
+Structured JSON Response
+↓
+UI Rendering (Answer / Tools / Raw JSON)
 
-### Frontend
-- Next.js (App Router)
-- TypeScript
-- TailwindCSS (v4)
-- Responsive 2-column layout
-- Structured results panel with tool proof
+The architecture separates deterministic business logic from AI reasoning to ensure reliability, auditability, and transparency.
 
-### Backend (API Route)
-- Next.js API Route (`/api/agent`)
+---
+
+## 🖥 Frontend Architecture
+
+- **Framework:** Next.js (App Router)
+- **Language:** TypeScript
+- **Styling:** TailwindCSS v4
+- **Structure:** Responsive 2-column dashboard layout
+- **Design Direction:** Corporate + Sustainable
+
+### Key UI Principles
+
+- Clear separation between:
+  - Agent Answer
+  - Tools Used
+  - Tool Outputs
+- Visual transparency of AI actions
+- Structured cards and interaction hierarchy
+- Smart input validation before enabling agent actions
+
+The UI was designed to simulate a production SaaS dashboard rather than a technical demo.
+
+---
+
+## 🔧 Backend & Agent Layer
+
+### API Route
+
+- `/api/agent`
 - Zod schema validation
-- Deterministic business logic
-- OpenAI-compatible model via OpenRouter
-- Vercel AI SDK
+- Deterministic tool execution
+- OpenAI-compatible model integration
+- Structured JSON response
 
-### AI Model
+### Model
+
 - Provider: OpenRouter
 - Model: `openai/gpt-4o-mini`
-- OpenAI-compatible interface
+- Integrated via Vercel AI SDK
 
 ---
 
-## 🛠 Agent & Tools
+## 🛠 Tools Implementation
 
 ### Tool 1 — detectAnomalies
 
-Purpose:
-- Detect energy consumption anomalies using a statistical threshold (130% of average consumption)
+**Purpose:**  
+Detect abnormal energy consumption based on statistical thresholding (130% of average).
 
-Returns:
-- Average consumption
-- Threshold
-- Anomaly list
-- Summary
+**Deterministic Logic:**
 
-This tool ensures deterministic and auditable business logic.
+- Calculate average consumption
+- Compute anomaly threshold
+- Identify anomalous months
+- Return structured result
+
+This tool ensures reproducibility and auditability.
 
 ---
 
 ### Tool 2 — draftEmailToFacilityManager
 
-Purpose:
-- Draft a structured email based on detected anomalies
-- Simulates execution of an external communication action
+**Purpose:**  
+Generate a structured operational email based on detected anomalies.
 
-Returns:
-- Email subject
-- Email body
+**Simulated Action Layer:**
 
-This demonstrates tool execution capability beyond simple analysis.
+- Produces subject + formatted body
+- Designed to represent real-world workflow automation
+
+This demonstrates tool execution beyond simple analytical responses.
 
 ---
 
-## 🔁 Agentic Workflow Design
+## 🤖 Agentic Workflow Strategy
 
-To ensure stability and transparency:
+To ensure robustness and avoid unstable tool-only LLM responses:
 
 1. The agent can call tools based on user intent.
-2. Tool outputs are captured and logged.
-3. A final LLM "writer step" generates a structured human-readable response.
-4. UI displays:
+2. Tool outputs are captured and stored.
+3. A final "writer step" LLM call synthesizes results.
+4. The frontend displays:
    - Tools used
    - Tool outputs
-   - Final AI answer
+   - Final structured answer
 
-This hybrid deterministic + LLM approach improves reliability and auditability.
+This hybrid deterministic + reasoning approach improves reliability and transparency.
 
 ---
 
-## 📊 Data Handling
+## 📊 Data Processing & Validation
 
-The system includes:
+Robust real-world handling includes:
 
 - CSV delimiter auto-detection (`;` or `,`)
 - Type coercion (string → number)
@@ -110,24 +140,9 @@ The system includes:
   - `Date`, `Month`, `Mês` → `month`
   - `Energy`, `kWh`, `Consumo` → `consumption`
   - `Cost`, `Price`, `Custo` → `cost`
+- Zod schema validation at API level
 
-This ensures robustness for real-world datasets.
-
----
-
-## 🎨 UI Design
-
-Design direction: **Corporate + Sustainable**
-
-- Clean layout
-- Soft eco-inspired accent color
-- Structured card system
-- Clear separation between:
-  - Agent answer
-  - Tool outputs
-  - Raw JSON (debug transparency)
-
-The interface emphasizes clarity, trust, and operational insight.
+This ensures dataset resilience and reduces runtime failure.
 
 ---
 
@@ -142,6 +157,7 @@ npm install
 ### 2️⃣ Configure environment variables
 
 Create a .env.local file:
+
 ```bash
 OPENAI_API_KEY=your_openrouter_key
 OPENAI_BASE_URL=https://openrouter.ai/api/v1
@@ -154,41 +170,70 @@ OPENAI_MODEL=openai/gpt-4o-mini
 npm run dev
 ```
 
-Visit: 
-http://localhost:3000
+Visit: [http://localhost:3000](http://localhost:3000)
 
+## 🧪 Example Scenario
 
-## 🧪 Example Usage
+1. Load sample data
+2. Select prompt: “Find anomalies and draft an email”
+3. Click Analyze
 
-1.Click Use sample data
+The system will:
 
-2.Choose quick prompt:
-“Find anomalies and draft an email”
+- Execute anomaly detection
+- Optionally generate a communication draft
+- Return structured response
+- Display tool proof in UI
 
-3.Click Analyze
+## 📈 Development Acceleration & AI Usage Report
 
-You will see:
- - Tools used
- - Tool outputs
- - AI summary 
- - Email draft preview
+The development process leveraged AI to accelerate iteration and refinement:
 
-
-## 🧾 AI Usage Report
-The development process leveraged AI tools to accelerate implementation:
-
-- ChatGPT for architectural planning and workflow structuring
-- AI assistance for refining tool schemas and agent prompts
+- Architecture planning and workflow structuring
+- Tool schema refinement
+- Prompt design for reliable tool calling
+- Iterative debugging
 - Model experimentation via OpenRouter
-- Iterative debugging with structured prompt engineering
-- All generated code was manually reviewed and validated
 
-## 📦 Potential Improvements
-Future enhancements could include:
+All AI-generated code was manually reviewed, validated, and adapted to ensure clarity and maintainability.
+The final implementation reflects intentional design decisions rather than raw generated output.
 
- - Unit testing for tools
- - Docker containerization
- - Structured JSON response mode
- - External API integration (e.g., real email service)
- - Role-based access control
- - Persistent storage
+## 🏗 Architectural Decisions
+
+Why deterministic tools?
+
+- Ensures reproducibility
+- Improves auditability
+- Prevents hallucinated analytical results
+
+Why hybrid tool + writer approach?
+Some OpenAI-compatible tool flows may return tool-only responses.
+The writer step guarantees a stable, structured final output.
+
+Why structured JSON response?
+
+- Enables clear UI rendering
+- Facilitates future integration (external systems)
+- Supports extensibility
+
+## 🔮 Future Improvements
+
+- Unit tests for deterministic tools
+- Docker containerization
+- External API integration (real email service)
+- Persistent storage layer
+- Role-based access control
+- KPI dashboard metrics
+- Streaming responses
+
+## 🏁 Conclusion
+
+This MVP demonstrates:
+
+- AI-enabled frontend acceleration
+- Agent-based workflow orchestration
+- Deterministic + LLM hybrid architecture
+- Structured tool execution
+- Production-oriented UI thinking
+
+It balances speed, clarity, robustness, and architectural intent, aligning with the goals of an AI-Enabled Frontend & Agentic Workflow Developer.
