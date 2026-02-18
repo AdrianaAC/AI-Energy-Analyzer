@@ -187,18 +187,18 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--color-surface)] p-8">
+    <main className="min-h-screen bg-(--color-surface) p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <header className="space-y-3">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-[var(--color-brand)]/10 flex items-center justify-center text-[var(--color-brand)] font-bold">
+            <div className="h-10 w-10 rounded-xl bg-(--color-brand)/10 flex items-center justify-center text-(--color-brand) font-bold">
               G2C
             </div>
             <div>
-              <h1 className="text-3xl font-semibold text-[var(--color-text-primary)]">
+              <h1 className="text-3xl font-semibold text-(--color-text-primary)">
                 Energy Intelligence Dashboard
               </h1>
-              <p className="text-sm text-[var(--color-text-secondary)]">
+              <p className="text-sm text-(--color-text-secondary)">
                 Corporate-grade insights for sustainability & operational
                 efficiency
               </p>
@@ -211,10 +211,10 @@ export default function Home() {
           {/* LEFT: Upload + Preview */}
           <div className="space-y-6">
             <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+              <h2 className="text-lg font-semibold text-(--color-text-primary)">
                 1) Upload
               </h2>
-              <p className="text-sm text-[var(--color-text-secondary)]">
+              <p className="text-sm text-(--color-text-secondary)">
                 Accepted: <span className="font-medium">.json</span>,{" "}
                 <span className="font-medium">.csv</span> (auto-detect “,” /
                 “;”).
@@ -279,10 +279,10 @@ export default function Home() {
             </section>
 
             <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+              <h2 className="text-lg font-semibold text-(--color-text-primary)">
                 2) Preview
               </h2>
-              <p className="text-sm text-[var(--color-text-secondary)]">
+              <p className="text-sm text-(--color-text-secondary)">
                 Showing up to 10 rows.
               </p>
 
@@ -354,7 +354,20 @@ function AgentPanel({
   );
   const [facilityName, setFacilityName] = useState("Main Facility");
   const [resultText, setResultText] = useState<string>("");
-  const [resultJson, setResultJson] = useState<any>(null);
+  type AgentResult = {
+    finalText?: string;
+    toolsUsed?: string[];
+    toolOutputs?: {
+      draftEmailToFacilityManager?: {
+        subject?: string;
+        body?: string;
+      };
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
+
+  const [resultJson, setResultJson] = useState<AgentResult | null>(null);
   const [activeTab, setActiveTab] = useState<"answer" | "tools" | "raw">(
     "answer",
   );
@@ -365,10 +378,10 @@ function AgentPanel({
       <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+            <h2 className="text-lg font-semibold text-(--color-text-primary)">
               3) Ask the Agent
             </h2>
-            <p className="text-sm text-[var(--color-text-secondary)]">
+            <p className="text-sm text-(--color-text-secondary)">
               {hasData ? (
                 <>
                   Data loaded: <span className="font-medium">{rowsCount}</span>{" "}
@@ -383,7 +396,7 @@ function AgentPanel({
           <span
             className={`rounded-full px-3 py-1 text-xs font-medium ${
               hasData
-                ? "bg-[var(--color-brand)]/10 text-[var(--color-brand)]"
+                ? "bg-(--color-brand)/10 text-(--color-brand)"
                 : "bg-gray-100 text-gray-700"
             }`}
           >
@@ -398,7 +411,7 @@ function AgentPanel({
                 Facility name
               </label>
               <input
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--color-brand)]/20 focus:border-[var(--color-brand)] transition"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-(--color-brand)/20 focus:border-(--color-brand) transition"
                 value={facilityName}
                 onChange={(e) => setFacilityName(e.target.value)}
                 placeholder="e.g., Lisbon HQ"
@@ -406,11 +419,15 @@ function AgentPanel({
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-neutral-700">
+              <label
+                htmlFor="quick-prompts"
+                className="text-xs font-medium text-neutral-700"
+              >
                 Quick prompts
               </label>
               <select
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--color-brand)]/20 focus:border-[var(--color-brand)] transition"
+                id="quick-prompts"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-(--color-brand)/20 focus:border-(--color-brand) transition"
                 onChange={(e) => {
                   const v = e.target.value;
                   if (v) setMessage(v);
@@ -434,7 +451,7 @@ function AgentPanel({
           </div>
 
           <textarea
-            className="min-h-[120px] w-full resize-y rounded-lg border border-gray-300 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-[var(--color-brand)]/20 focus:border-[var(--color-brand)] transition"
+            className="min-h-30 w-full resize-y rounded-lg border border-gray-300 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-(--color-brand)/20 focus:border-(--color-brand) transition"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Ask something like: Detect anomalies, suggest improvements, generate a summary..."
@@ -443,7 +460,7 @@ function AgentPanel({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="rounded-lg bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)] transition-colors disabled:opacity-50"
+              className="rounded-lg bg-(--color-brand) px-4 py-2 text-sm font-medium text-white hover:bg-(--color-brand-dark) transition-colors disabled:opacity-50"
               disabled={!hasData || message.trim().length === 0}
               onClick={async () => {
                 try {
@@ -502,10 +519,10 @@ function AgentPanel({
       </section>
 
       <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+        <h2 className="text-lg font-semibold text-(--color-text-primary)">
           4) Results
         </h2>
-        <p className="text-sm text-[var(--color-text-secondary)]">
+        <p className="text-sm text-(--color-text-secondary)">
           Agent output will appear here.
         </p>
 
@@ -539,7 +556,7 @@ function AgentPanel({
             </div>
 
             {activeTab === "answer" ? (
-              <div className="min-h-[180px] whitespace-pre-wrap rounded-lg border bg-white p-4 text-sm">
+              <div className="min-h-45 whitespace-pre-wrap rounded-lg border bg-white p-4 text-sm">
                 {resultJson.finalText}
               </div>
             ) : null}
@@ -604,7 +621,7 @@ function AgentPanel({
             ) : null}
           </div>
         ) : (
-          <div className="mt-4 min-h-[180px] whitespace-pre-wrap rounded-lg border bg-white p-4 text-sm">
+          <div className="mt-4 min-h-45 whitespace-pre-wrap rounded-lg border bg-white p-4 text-sm">
             {resultText ? (
               resultText
             ) : (
