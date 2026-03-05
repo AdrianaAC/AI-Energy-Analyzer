@@ -173,7 +173,7 @@ npm test
 Build image:
 
 ```bash
-docker build -t g2c-challenge .
+docker build -t ai-energy-analyzer .
 ```
 
 Run container:
@@ -183,7 +183,7 @@ docker run --rm -p 3000:3000 \
   -e OPENAI_API_KEY=your_openrouter_key \
   -e OPENAI_BASE_URL=https://openrouter.ai/api/v1 \
   -e OPENAI_MODEL=openai/gpt-4o-mini \
-  g2c-challenge
+  ai-energy-analyzer
 ```
 
 ---
