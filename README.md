@@ -1,4 +1,4 @@
-# Energy Intelligence Dashboard
+# Energy Intelligence Dashboard — Technical Assessment (AI-Enabled Frontend & Agentic Workflow)”
 
 AI-Enabled Frontend and Agentic Workflow MVP
 
@@ -10,7 +10,7 @@ It demonstrates rapid AI-assisted development, agent-based workflows, determinis
 
 ## Deliverables
 
-- Repository: `https://github.com/AdrianaAC/G2C_Challenge`
+- Repository: `https://github.com/AdrianaAC/AI-Energy-Analyzer`
 - Live application: `https://g2-c-challenge.vercel.app/`
 
 ---
